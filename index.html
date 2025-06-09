@@ -160,6 +160,7 @@
       let recordedBuffer = null; // Stores the original or last trimmed AudioBuffer
       let liveAnalyser = null;
       let recordedAnalyser = null;
+      let currentDest = null;
 
       // --- UI Elements ---
       const recordButton = document.getElementById("recordButton");
@@ -262,8 +263,21 @@
             saveSelectedDevices(audioInputDevicesSelect.value, outId);
             if (!supportSink()) return;
 
-            const audioEl =
-              document.getElementById("output-audio") || createOutputAudio();
+            let audioEl = document.getElementById("output-audio");
+            if (!audioEl) {
+              audioEl = createOutputAudio();
+            }
+
+            // Clean up existing routing
+            if (currentDest) {
+              Tone.Destination.disconnect(currentDest);
+            }
+
+            // Create new routing
+            currentDest = Tone.context.createMediaStreamDestination();
+            Tone.Destination.connect(currentDest);
+            audioEl.srcObject = currentDest.stream;
+
             try {
               await audioEl.setSinkId(outId);
               console.log("Output routed to: ", audioEl.sinkId);
