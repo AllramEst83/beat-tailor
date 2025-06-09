@@ -1,5 +1,3 @@
-// localstorageService.js
-
 const MICROPHONE_KEY = "selectedMicrophoneDeviceId";
 const SPEAKER_KEY = "selectedSpeakerDeviceId";
 
