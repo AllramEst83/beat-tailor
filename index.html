@@ -362,6 +362,117 @@
                 >Loop Sample</label
               >
             </div>
+
+            <div class="flex flex-col gap-2">
+              <label
+                for="chorusWet"
+                class="block text-sm font-medium text-pink-700"
+                >Chorus Wet:</label
+              >
+              <input
+                type="range"
+                id="chorusWet"
+                min="0"
+                max="1"
+                value="0"
+                step="0.01"
+                class="w-full h-2 bg-pink-300 rounded-lg appearance-none cursor-pointer"
+              />
+              <span id="chorusWetValue" class="text-pink-600 text-sm">0%</span>
+            </div>
+            <div class="flex flex-col gap-2">
+              <label
+                for="chorusFreq"
+                class="block text-sm font-medium text-pink-700"
+                >Chorus Freq:</label
+              >
+              <input
+                type="range"
+                id="chorusFreq"
+                min="0.1"
+                max="10"
+                value="1.5"
+                step="0.1"
+                class="w-full h-2 bg-pink-300 rounded-lg appearance-none cursor-pointer"
+              />
+              <span id="chorusFreqValue" class="text-pink-600 text-sm"
+                >1.5 Hz</span
+              >
+            </div>
+            <div class="flex flex-col gap-2">
+              <label
+                for="phaserWet"
+                class="block text-sm font-medium text-pink-700"
+                >Phaser Wet:</label
+              >
+              <input
+                type="range"
+                id="phaserWet"
+                min="0"
+                max="1"
+                value="0"
+                step="0.01"
+                class="w-full h-2 bg-pink-300 rounded-lg appearance-none cursor-pointer"
+              />
+              <span id="phaserWetValue" class="text-pink-600 text-sm">0%</span>
+            </div>
+            <div class="flex flex-col gap-2">
+              <label
+                for="phaserFreq"
+                class="block text-sm font-medium text-pink-700"
+                >Phaser Freq:</label
+              >
+              <input
+                type="range"
+                id="phaserFreq"
+                min="0.1"
+                max="5"
+                value="1"
+                step="0.01"
+                class="w-full h-2 bg-pink-300 rounded-lg appearance-none cursor-pointer"
+              />
+              <span id="phaserFreqValue" class="text-pink-600 text-sm"
+                >1 Hz</span
+              >
+            </div>
+            <div class="flex flex-col gap-2">
+              <label
+                for="bitCrusherWet"
+                class="block text-sm font-medium text-pink-700"
+                >BitCrusher Wet:</label
+              >
+              <input
+                type="range"
+                id="bitCrusherWet"
+                min="0"
+                max="1"
+                value="0"
+                step="0.01"
+                class="w-full h-2 bg-pink-300 rounded-lg appearance-none cursor-pointer"
+              />
+              <span id="bitCrusherWetValue" class="text-pink-600 text-sm"
+                >0%</span
+              >
+            </div>
+            <div class="flex flex-col gap-2">
+              <label
+                for="bitCrusherBits"
+                class="block text-sm font-medium text-pink-700"
+                >BitCrusher Bits:</label
+              >
+              <input
+                type="range"
+                id="bitCrusherBits"
+                min="1"
+                max="8"
+                value="8"
+                step="1"
+                class="w-full h-2 bg-pink-300 rounded-lg appearance-none cursor-pointer"
+              />
+              <span id="bitCrusherBitsValue" class="text-pink-600 text-sm"
+                >8 bits</span
+              >
+            </div>
           </div>
           <!-- EQ3 Controls -->
           <h3 class="text-lg font-bold text-pink-800 mt-6 mb-3">
@@ -723,8 +834,22 @@
       const eqMidValueSpan = document.getElementById("eqMidValue");
       const eqTrebleSlider = document.getElementById("eqTreble");
       const eqTrebleValueSpan = document.getElementById("eqTrebleValue");
+      const chorusWetSlider = document.getElementById("chorusWet");
+      const chorusWetValueSpan = document.getElementById("chorusWetValue");
+      const chorusFreqSlider = document.getElementById("chorusFreq");
+      const chorusFreqValueSpan = document.getElementById("chorusFreqValue");
+      const phaserWetSlider = document.getElementById("phaserWet");
+      const phaserWetValueSpan = document.getElementById("phaserWetValue");
+      const phaserFreqSlider = document.getElementById("phaserFreq");
+      const phaserFreqValueSpan = document.getElementById("phaserFreqValue");
+      const bitCrusherWetSlider = document.getElementById("bitCrusherWet");
+      const bitCrusherWetValueSpan =
+        document.getElementById("bitCrusherWetValue");
+      const bitCrusherBitsSlider = document.getElementById("bitCrusherBits");
+      const bitCrusherBitsValueSpan = document.getElementById(
+        "bitCrusherBitsValue"
+      );
 
-      // New FX Rack Buttons
       const playSinglePadBtn = document.getElementById("playSinglePadBtn");
       const stopSinglePadBtn = document.getElementById("stopSinglePadBtn");
 
@@ -790,29 +915,38 @@
           const pad = {
             id: `pad${i + 1}`,
             player: new Tone.Player(),
-            gainNode: new Tone.Gain(Tone.dbToGain(-10)), // Initial volume 0dB
+            gainNode: new Tone.Gain(Tone.dbToGain(-10)),
             loop: false,
             fx: {
               pitch: new Tone.PitchShift(0),
-              delay: new Tone.FeedbackDelay("8n", 0), // Initial feedback 0
-              reverb: new Tone.Reverb(0.5), // Initial decay 0.5s
+              chorus: new Tone.Chorus(1.5, 3.5, 0.5),
+              phaser: new Tone.Phaser(1, 4, 300),
+              delay: new Tone.FeedbackDelay("8n", 0),
+              bitCrusher: new Tone.BitCrusher(8),
+              reverb: new Tone.Reverb(0.5),
               distortion: new Tone.Distortion(0), // Initial amount 0
               highPass: new Tone.Filter(20, "highpass"),
               lowPass: new Tone.Filter(20000, "lowpass"),
               eq: new Tone.EQ3(0, 0, 0), // Bass, Mid, Treble gains in dB
             },
             settings: {
-              speed: 1, // Playback rate
-              pitch: 0, // Pitch shift in semitones
-              volume: -10, // Volume in dB
-              reverbWet: 0, // Reverb dry/wet mix (0-1)
-              delayWet: 0, // Delay dry/wet mix (0-1)
-              distortionWet: 0, // Distortion dry/wet mix (0-1)
-              highPassFreq: 20, // High-pass filter frequency in Hz
-              lowPassFreq: 20000, // Low-pass filter frequency in Hz
-              eqBass: 0, // EQ Bass gain in dB
-              eqMid: 0, // EQ Mid gain in dB
-              eqTreble: 0, // EQ Treble gain in dB
+              speed: 1,
+              pitch: 0,
+              volume: -10,
+              reverbWet: 0,
+              delayWet: 0,
+              distortionWet: 0,
+              chorusWet: 0, // New: Chorus wet mix
+              chorusFreq: 1.5, // New: Chorus frequency
+              phaserWet: 0, // New: Phaser wet mix
+              phaserFreq: 1, // New: Phaser frequency
+              bitCrusherWet: 0, // New: BitCrusher wet mix
+              bitCrusherBits: 8, // New: BitCrusher bits
+              highPassFreq: 20,
+              lowPassFreq: 20000,
+              eqBass: 0,
+              eqMid: 0,
+              eqTreble: 0,
             },
             isSelected: false,
             waveformBuffer: null, // Stores the AudioBuffer for the pad's sample
@@ -823,6 +957,9 @@
           // player -> pitch -> distortion -> highPass -> lowPass -> delay -> reverb -> eq -> gainNode -> Tone.Destination
           pad.player.chain(
             pad.fx.pitch,
+            pad.fx.chorus,
+            pad.fx.phaser,
+            pad.fx.bitCrusher,
             pad.fx.distortion,
             pad.fx.highPass,
             pad.fx.lowPass,
@@ -830,7 +967,7 @@
             pad.fx.reverb,
             pad.fx.eq,
             pad.gainNode,
-            Tone.Destination // Connect to the master output
+            Tone.Destination
           );
 
           // Set initial wet values for effects that have them
@@ -838,8 +975,17 @@
           pad.fx.delay.wet.value = pad.settings.delayWet;
           pad.fx.reverb.wet.value = pad.settings.reverbWet;
 
+          pad.fx.chorus.wet.value = pad.settings.chorusWet;
+          pad.fx.chorus.frequency.value = pad.settings.chorusFreq;
+
+          pad.fx.phaser.wet.value = pad.settings.phaserWet;
+          pad.fx.phaser.frequency.value = pad.settings.phaserFreq;
+
+          pad.fx.bitCrusher.wet.value = pad.settings.bitCrusherWet;
+          pad.fx.bitCrusher.bits = pad.settings.bitCrusherBits;
+
           pads.push(pad);
-          createPadUI(pad); // Create the HTML UI for the pad
+          createPadUI(pad);
         }
         // Set initial master volume
         Tone.Destination.volume.value = masterVolumeSlider.value;
@@ -1027,6 +1173,12 @@
         if (!selectedPad) {
           selectedPadNameSpan.textContent = "None";
           // Reset display values to default/empty if no pad selected
+          chorusWetValueSpan.textContent = "0%";
+          chorusFreqValueSpan.textContent = "1.5 Hz";
+          phaserWetValueSpan.textContent = "0%";
+          phaserFreqValueSpan.textContent = "1 Hz";
+          bitCrusherWetValueSpan.textContent = "0%";
+          bitCrusherBitsValueSpan.textContent = "8 bits";
           padVolumeValueSpan.textContent = "-10 dB";
           padSpeedValueSpan.textContent = "1x";
           padPitchValueSpan.textContent = "0 semitones";
@@ -1040,6 +1192,12 @@
           eqMidValueSpan.textContent = "0 dB";
           eqTrebleValueSpan.textContent = "0 dB";
 
+          chorusWetSlider.value = 0;
+          chorusFreqSlider.value = 1.5;
+          phaserWetSlider.value = 0;
+          phaserFreqSlider.value = 1;
+          bitCrusherWetSlider.value = 0;
+          bitCrusherBitsSlider.value = 8;
           padVolumeSlider.value = -10;
           padSpeedSlider.value = 1;
           padPitchSlider.value = 0;
@@ -1058,6 +1216,34 @@
         }
 
         // Update sliders and spans with selected pad's settings
+        chorusWetSlider.value = selectedPad.settings.chorusWet;
+        chorusWetValueSpan.textContent = `${(
+          selectedPad.settings.chorusWet * 100
+        ).toFixed(0)}%`;
+
+        chorusFreqSlider.value = selectedPad.settings.chorusFreq;
+        chorusFreqValueSpan.textContent = `${selectedPad.settings.chorusFreq.toFixed(
+          1
+        )} Hz`;
+
+        phaserWetSlider.value = selectedPad.settings.phaserWet;
+        phaserWetValueSpan.textContent = `${(
+          selectedPad.settings.phaserWet * 100
+        ).toFixed(0)}%`;
+
+        phaserFreqSlider.value = selectedPad.settings.phaserFreq;
+        phaserFreqValueSpan.textContent = `${selectedPad.settings.phaserFreq.toFixed(
+          2
+        )} Hz`;
+
+        bitCrusherWetSlider.value = selectedPad.settings.bitCrusherWet;
+        bitCrusherWetValueSpan.textContent = `${(
+          selectedPad.settings.bitCrusherWet * 100
+        ).toFixed(0)}%`;
+
+        bitCrusherBitsSlider.value = selectedPad.settings.bitCrusherBits;
+        bitCrusherBitsValueSpan.textContent = `${selectedPad.settings.bitCrusherBits} bits`;
+
         padVolumeSlider.value = selectedPad.settings.volume;
         padVolumeValueSpan.textContent = `${selectedPad.settings.volume} dB`;
 
@@ -1761,6 +1947,9 @@
                 volume: pad.settings.volume, // Inherit volume from pad settings
               }).chain(
                 pad.fx.pitch,
+                pad.fx.chorus,
+                pad.fx.phaser,
+                pad.fx.bitCrusher,
                 pad.fx.distortion,
                 pad.fx.highPass,
                 pad.fx.lowPass,
@@ -2121,6 +2310,71 @@
       });
 
       // FX Rack Control Listeners
+
+      chorusWetSlider.addEventListener("input", () => {
+        if (selectedPadId) {
+          const pad = pads.find((p) => p.id === selectedPadId);
+          pad.settings.chorusWet = parseFloat(chorusWetSlider.value);
+          pad.fx.chorus.wet.value = pad.settings.chorusWet;
+          chorusWetValueSpan.textContent = `${(
+            pad.settings.chorusWet * 100
+          ).toFixed(0)}%`;
+        }
+      });
+
+      chorusFreqSlider.addEventListener("input", () => {
+        if (selectedPadId) {
+          const pad = pads.find((p) => p.id === selectedPadId);
+          pad.settings.chorusFreq = parseFloat(chorusFreqSlider.value);
+          pad.fx.chorus.frequency.value = pad.settings.chorusFreq;
+          chorusFreqValueSpan.textContent = `${pad.settings.chorusFreq.toFixed(
+            1
+          )} Hz`;
+        }
+      });
+
+      phaserWetSlider.addEventListener("input", () => {
+        if (selectedPadId) {
+          const pad = pads.find((p) => p.id === selectedPadId);
+          pad.settings.phaserWet = parseFloat(phaserWetSlider.value);
+          pad.fx.phaser.wet.value = pad.settings.phaserWet;
+          phaserWetValueSpan.textContent = `${(
+            pad.settings.phaserWet * 100
+          ).toFixed(0)}%`;
+        }
+      });
+
+      phaserFreqSlider.addEventListener("input", () => {
+        if (selectedPadId) {
+          const pad = pads.find((p) => p.id === selectedPadId);
+          pad.settings.phaserFreq = parseFloat(phaserFreqSlider.value);
+          pad.fx.phaser.frequency.value = pad.settings.phaserFreq;
+          phaserFreqValueSpan.textContent = `${pad.settings.phaserFreq.toFixed(
+            2
+          )} Hz`;
+        }
+      });
+
+      bitCrusherWetSlider.addEventListener("input", () => {
+        if (selectedPadId) {
+          const pad = pads.find((p) => p.id === selectedPadId);
+          pad.settings.bitCrusherWet = parseFloat(bitCrusherWetSlider.value);
+          pad.fx.bitCrusher.wet.value = pad.settings.bitCrusherWet;
+          bitCrusherWetValueSpan.textContent = `${(
+            pad.settings.bitCrusherWet * 100
+          ).toFixed(0)}%`;
+        }
+      });
+
+      bitCrusherBitsSlider.addEventListener("input", () => {
+        if (selectedPadId) {
+          const pad = pads.find((p) => p.id === selectedPadId);
+          pad.settings.bitCrusherBits = parseInt(bitCrusherBitsSlider.value);
+          pad.fx.bitCrusher.bits = pad.settings.bitCrusherBits;
+          bitCrusherBitsValueSpan.textContent = `${pad.settings.bitCrusherBits} bits`;
+        }
+      });
+
       padVolumeSlider.addEventListener("input", () => {
         if (selectedPadId) {
           const pad = pads.find((p) => p.id === selectedPadId);
