@@ -111,7 +111,7 @@
             </div>
           </div>
           <!-- Play, Stop, Record Buttons -->
-          <div class="grid grid-cols-3 gap-3">
+          <div class="flex flex-col gap-3 w-full">
             <button
               id="playBtn"
               class="bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-4 rounded-xl shadow-md transition duration-200"
@@ -130,10 +130,17 @@
             >
               Record
             </button>
+            <button
+              id="stopRecordBtn"
+              class="bg-gray-500 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-xl shadow-md transition duration-200"
+              style="display: none"
+            >
+              Stop Recording
+            </button>
             <!-- Download Recording Link (initially hidden) -->
             <a
               id="downloadRecording"
-              class="col-span-3 bg-indigo-500 hover:bg-indigo-600 text-white font-semibold py-2 px-4 rounded-xl shadow-md text-center cursor-pointer hidden"
+              class="col-span-4 bg-indigo-500 hover:bg-indigo-600 text-white font-semibold py-2 px-4 rounded-xl shadow-md text-center cursor-pointer hidden"
               download="recording.wav"
               >Download Recording</a
             >
@@ -677,6 +684,7 @@
       const playBtn = document.getElementById("playBtn");
       const stopBtn = document.getElementById("stopBtn");
       const recordBtn = document.getElementById("recordBtn");
+      const stopRecordBtn = document.getElementById("stopRecordBtn");
       const downloadRecordingLink =
         document.getElementById("downloadRecording");
 
@@ -2031,44 +2039,67 @@
       }
 
       recordBtn.addEventListener("click", async () => {
-        if (Tone.Transport.state !== "started") {
-          showToast("Start playback first to record the sequence.");
-          return;
-        }
-        if (recordBtn.textContent === "Record") {
-          recordBtn.textContent = "Recording...";
-          recordBtn.classList.add("bg-red-500", "animate-pulse");
-          downloadRecordingLink.classList.add("hidden");
-          try {
-            await masterRecorder.start(); // Start master recorder
-          } catch (error) {
-            console.error("Error starting master recorder:", error);
-            showToast(
-              "Failed to start recording. Please check console for details."
-            );
-            recordBtn.textContent = "Record";
-            recordBtn.classList.remove("bg-red-500", "animate-pulse");
+        recordBtn.textContent = "Recording...";
+        recordBtn.classList.add("bg-red-500", "animate-pulse");
+        downloadRecordingLink.classList.add("hidden");
+        stopRecordBtn.style.display = "inline-block";
+        recordBtn.disabled = true;
+
+        try {
+          await masterRecorder.start(); // Start master recorder
+
+          // If transport isn't running, start it automatically
+          if (
+            Tone.Transport.state !== "started" &&
+            timelineEventsData.length > 0
+          ) {
+            await Tone.start();
+            Tone.Transport.start();
+            playBtn.textContent = "Playing...";
+
+            // Schedule transport to stop at the end of sequence
+            let maxTimeSeconds = 0;
+            timelineEventsData.forEach((event) => {
+              const eventTime = Tone.Time(event.time).toSeconds();
+              if (eventTime > maxTimeSeconds) maxTimeSeconds = eventTime;
+            });
+
+            const padding = 1;
+            Tone.Transport.scheduleOnce(() => {
+              handleTransportStop();
+            }, maxTimeSeconds + padding);
           }
-        } else {
-          recordBtn.textContent = "Processing...";
+        } catch (error) {
+          console.error("Error starting master recorder:", error);
+          showToast(
+            "Failed to start recording. Please check console for details."
+          );
+          recordBtn.textContent = "Record";
           recordBtn.classList.remove("bg-red-500", "animate-pulse");
-          try {
-            const recordingBlob = await masterRecorder.stop(); // Stop and get recording blob
-            const url = URL.createObjectURL(recordingBlob);
-            downloadRecordingLink.href = url;
-            downloadRecordingLink.classList.remove("hidden");
-            recordBtn.textContent = "Record";
-            showToast(
-              "Recording finished! Click 'Download Recording' to save."
-            );
-          } catch (error) {
-            console.error("Error stopping master recorder:", error);
-            showToast(
-              "Failed to stop recording. Recording may have been too short or an error occurred."
-            );
-            recordBtn.textContent = "Record";
-          }
+          stopRecordBtn.style.display = "none";
+          recordBtn.disabled = false;
         }
+      });
+
+      stopRecordBtn.addEventListener("click", async () => {
+        recordBtn.textContent = "Processing...";
+        recordBtn.classList.remove("bg-red-500", "animate-pulse");
+        stopRecordBtn.style.display = "none";
+        try {
+          const recordingBlob = await masterRecorder.stop(); // Stop and get recording blob
+          const url = URL.createObjectURL(recordingBlob);
+          downloadRecordingLink.href = url;
+          downloadRecordingLink.classList.remove("hidden");
+          recordBtn.textContent = "Record";
+          showToast("Recording finished! Click 'Download Recording' to save.");
+        } catch (error) {
+          console.error("Error stopping master recorder:", error);
+          showToast(
+            "Failed to stop recording. Recording may have been too short or an error occurred."
+          );
+          recordBtn.textContent = "Record";
+        }
+        recordBtn.disabled = false;
       });
 
       // FX Rack Control Listeners
