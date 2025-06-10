@@ -142,22 +142,24 @@
 
         <!-- Visual EQ Analyzer Section -->
         <div class="bg-orange-100 p-5 rounded-2xl shadow-lg">
-            <h2 class="text-xl font-bold text-orange-800 mb-4">
-              Visual EQ Analyzer
-            </h2>
-            <div
-              id="eqVisualizerContainer"
-              class="w-full bg-gray-50 rounded-lg border border-gray-300"
-              style="height: 100px"
-            >
-              <canvas id="eqVisualizerCanvas" class="w-full h-full"></canvas>
-            </div>
-            <div class="flex flex-row justify-between mt-1 px-2 text-sm font-medium text-gray-700 select-none">
-          <span class="flex-1 text-center">Bass</span>
-          <span class="flex-1 text-center">Mid</span>
-          <span class="flex-1 text-center">Treble</span>
-        </div>
+          <h2 class="text-xl font-bold text-orange-800 mb-4">
+            Visual EQ Analyzer
+          </h2>
+          <div
+            id="eqVisualizerContainer"
+            class="w-full bg-gray-50 rounded-lg border border-gray-300"
+            style="height: 100px"
+          >
+            <canvas id="eqVisualizerCanvas" class="w-full h-full"></canvas>
           </div>
+          <div
+            class="flex flex-row justify-between mt-1 px-2 text-sm font-medium text-gray-700 select-none"
+          >
+            <span class="flex-1 text-center">Bass</span>
+            <span class="flex-1 text-center">Mid</span>
+            <span class="flex-1 text-center">Treble</span>
+          </div>
+        </div>
 
         <!-- Drum Pads Section -->
         <div class="bg-yellow-100 p-5 rounded-2xl shadow-lg flex-grow">
@@ -231,7 +233,8 @@
                 step="1"
                 class="w-full h-2 bg-pink-300 rounded-lg appearance-none cursor-pointer"
               />
-              <span id="padPitchValue" class="text-pink-600 text-sm">0 semitones</span
+              <span id="padPitchValue" class="text-pink-600 text-sm"
+                >0 semitones</span
               >
             </div>
             <!-- Reverb Wet Control -->
@@ -328,7 +331,6 @@
               />
               <span id="lowPassFreqValue" class="text-pink-600 text-sm"
                 >20000 Hz</span
-
               >
             </div>
             <!-- Loop Toggle Checkbox -->
@@ -723,7 +725,9 @@
       const waveformCanvasContainer = document.getElementById(
         "waveformCanvasContainer"
       );
-      const assignSampleToPadBtn = document.getElementById("assignSampleToPadBtn");
+      const assignSampleToPadBtn = document.getElementById(
+        "assignSampleToPadBtn"
+      );
       const trimStartSlider = document.getElementById("trimStart");
       const trimStartValueSpan = document.getElementById("trimStartValue");
       const trimEndSlider = document.getElementById("trimEnd");
@@ -1124,7 +1128,6 @@
        * Initializes the Konva.js stage and layer for the waveform display.
        */
       function initWaveformKonva() {
-
         waveformContainerWidth = waveformCanvasContainer.offsetWidth;
         waveformContainerHeight = waveformCanvasContainer.offsetHeight;
 
@@ -1153,8 +1156,8 @@
           width: 0,
           height: waveformContainerHeight,
           fill: "#6366f1",
-          draggable: false, 
-          listening: false ,
+          draggable: false,
+          listening: false,
           cursor: "ew-resize",
           dragBoundFunc: function (pos) {
             // Restrict dragging within canvas bounds and and before trimEndRect
@@ -1173,8 +1176,8 @@
           width: 0,
           height: waveformContainerHeight,
           fill: "#6366f1", // Indigo-500
-          draggable: false, 
-          listening: false ,
+          draggable: false,
+          listening: false,
           cursor: "ew-resize",
           dragBoundFunc: function (pos) {
             // Restrict dragging within canvas bounds and after trimStartRect
@@ -1277,12 +1280,19 @@
        */
       function updateTrimHighlight() {
         // Ensure Konva objects are initialized before attempting to access their properties
-        if (!waveformStage || !trimStartRect || !trimEndRect || !trimHighlightRect) {
-            return;
+        if (
+          !waveformStage ||
+          !trimStartRect ||
+          !trimEndRect ||
+          !trimHighlightRect
+        ) {
+          return;
         }
 
-        const startX = (parseFloat(trimStartSlider.value) / 100) * waveformContainerWidth;
-        const endX = (parseFloat(trimEndSlider.value) / 100) * waveformContainerWidth;
+        const startX =
+          (parseFloat(trimStartSlider.value) / 100) * waveformContainerWidth;
+        const endX =
+          (parseFloat(trimEndSlider.value) / 100) * waveformContainerWidth;
         trimHighlightRect.x(startX);
         trimHighlightRect.width(endX - startX);
         waveformLayer.draw();
@@ -1483,19 +1493,26 @@
 
             // Snap to grid during drag
             eventRect.dragBoundFunc = function (pos) {
-              const newX = Math.round(pos.x / timelineCellSize) * timelineCellSize;
-              const newY = Math.round(pos.y / timelineCellSize) * timelineCellSize;
+              const newX =
+                Math.round(pos.x / timelineCellSize) * timelineCellSize;
+              const newY =
+                Math.round(pos.y / timelineCellSize) * timelineCellSize;
 
               // Clamp to canvas bounds
-              const clampedX = Math.max(0, Math.min(newX, timelineStage.width() - this.width()));
-              const clampedY = Math.max(0, Math.min(newY, timelineStage.height() - this.height()));
+              const clampedX = Math.max(
+                0,
+                Math.min(newX, timelineStage.width() - this.width())
+              );
+              const clampedY = Math.max(
+                0,
+                Math.min(newY, timelineStage.height() - this.height())
+              );
 
               return {
                 x: clampedX,
                 y: clampedY,
               };
             };
-
 
             eventRect.on("dragend", function () {
               const newPos = eventRect.position();
@@ -1583,39 +1600,49 @@
        * Removes a timeline event by its Konva ID.
        * @param {string} eventId
        */
-       function removeTimelineEvent(eventId) {
-            console.log(`Removing timeline event: ${eventId}`);
-            const index = timelineEventsData.findIndex((e) => e.id === eventId);
-            if (index !== -1) {
-                // Stop and dispose all currently active players
-                let playersToDispose = Array.from(activeTimelinePlayers);
-                playersToDispose.forEach(player => {
-                    try {
-                        if (player && typeof player.stop === 'function' && typeof player.dispose === 'function') {
-                            console.log("Removing event: Disposing player:", player);
-                            player.stop();
-                            player.dispose();
-                        }
-                    } catch (e) {
-                        console.error("Error during player disposal in removeTimelineEvent:", e);
-                    }
-                });
-                activeTimelinePlayers.clear();
-
-                // Remove the event from the data array
-                const removedEvent = timelineEventsData.splice(index, 1)[0];
-
-                // Stop and dispose players specifically tied to the removed event
-                Tone.Transport.cancel(removedEvent.time);
-
-                // Clear all existing schedules and re-render
-                Tone.Transport.clear();
-                renderTimelineEvents();
-                scheduleAllEvents(); // Reschedule only remaining events
-
-                console.log("Timeline event removed, active players:", activeTimelinePlayers.size);
+      function removeTimelineEvent(eventId) {
+        console.log(`Removing timeline event: ${eventId}`);
+        const index = timelineEventsData.findIndex((e) => e.id === eventId);
+        if (index !== -1) {
+          // Stop and dispose all currently active players
+          let playersToDispose = Array.from(activeTimelinePlayers);
+          playersToDispose.forEach((player) => {
+            try {
+              if (
+                player &&
+                typeof player.stop === "function" &&
+                typeof player.dispose === "function"
+              ) {
+                console.log("Removing event: Disposing player:", player);
+                player.stop();
+                player.dispose();
+              }
+            } catch (e) {
+              console.error(
+                "Error during player disposal in removeTimelineEvent:",
+                e
+              );
             }
+          });
+          activeTimelinePlayers.clear();
+
+          // Remove the event from the data array
+          const removedEvent = timelineEventsData.splice(index, 1)[0];
+
+          // Stop and dispose players specifically tied to the removed event
+          Tone.Transport.cancel(removedEvent.time);
+
+          // Clear all existing schedules and re-render
+          Tone.Transport.clear();
+          renderTimelineEvents();
+          scheduleAllEvents(); // Reschedule only remaining events
+
+          console.log(
+            "Timeline event removed, active players:",
+            activeTimelinePlayers.size
+          );
         }
+      }
 
       /**
        * Clears all events from the timeline.
@@ -1627,24 +1654,34 @@
 
         // Dispose of any lingering players from previous schedules
         let playersToDispose = Array.from(activeTimelinePlayers); // Create a static array to iterate
-        playersToDispose.forEach(player => {
-            try {
-                if (player && typeof player.stop === 'function' && typeof player.dispose === 'function') {
-                    console.log("Clear Timeline: Disposing player:", player);
-                    player.stop();
-                    player.dispose();
-                } else {
-                    console.warn("Clear Timeline: Invalid player object found during disposal:", player);
-                }
-            } catch (e) {
-                console.error("Error during player disposal in clearTimeline:", e);
+        playersToDispose.forEach((player) => {
+          try {
+            if (
+              player &&
+              typeof player.stop === "function" &&
+              typeof player.dispose === "function"
+            ) {
+              console.log("Clear Timeline: Disposing player:", player);
+              player.stop();
+              player.dispose();
+            } else {
+              console.warn(
+                "Clear Timeline: Invalid player object found during disposal:",
+                player
+              );
             }
+          } catch (e) {
+            console.error("Error during player disposal in clearTimeline:", e);
+          }
         });
         activeTimelinePlayers.clear(); // Clear the set
 
         scheduleAllEvents(); // This will now schedule an empty set of events
         showToast("Timeline cleared.");
-        console.log("Clear Timeline: Active players after clear and reschedule:", activeTimelinePlayers.size);
+        console.log(
+          "Clear Timeline: Active players after clear and reschedule:",
+          activeTimelinePlayers.size
+        );
       }
 
       /**
@@ -1658,24 +1695,39 @@
         console.log("Tone.Transport cleared.");
 
         // Dispose of any lingering players from previous schedules
-        console.log("Active Timeline Players before cleanup:", activeTimelinePlayers.size);
+        console.log(
+          "Active Timeline Players before cleanup:",
+          activeTimelinePlayers.size
+        );
         let playersToDispose = Array.from(activeTimelinePlayers); // Create a static array to iterate
-        playersToDispose.forEach(player => {
-            try {
-                if (player && typeof player.stop === 'function' && typeof player.dispose === 'function') {
-                    console.log("Disposing player:", player);
-                    player.stop();
-                    player.dispose();
-                } else {
-                    console.warn("Invalid player object found in activeTimelinePlayers during cleanup:", player);
-                }
-            } catch (e) {
-                console.error("Error during player disposal in scheduleAllEvents:", e);
+        playersToDispose.forEach((player) => {
+          try {
+            if (
+              player &&
+              typeof player.stop === "function" &&
+              typeof player.dispose === "function"
+            ) {
+              console.log("Disposing player:", player);
+              player.stop();
+              player.dispose();
+            } else {
+              console.warn(
+                "Invalid player object found in activeTimelinePlayers during cleanup:",
+                player
+              );
             }
+          } catch (e) {
+            console.error(
+              "Error during player disposal in scheduleAllEvents:",
+              e
+            );
+          }
         });
         activeTimelinePlayers.clear(); // Clear the set after disposing all
-        console.log("Active Timeline Players after cleanup:", activeTimelinePlayers.size);
-
+        console.log(
+          "Active Timeline Players after cleanup:",
+          activeTimelinePlayers.size
+        );
 
         timelineEventsData.forEach((eventData, index) => {
           const pad = pads.find((p) => p.id === eventData.padId);
@@ -1689,7 +1741,7 @@
                 url: pad.player.buffer, // Use the already loaded AudioBuffer
                 loop: pad.loop, // Inherit loop setting from the pad's settings
                 playbackRate: pad.settings.speed, // Inherit playback rate from the pad's settings
-                volume: pad.settings.volume // Inherit volume from pad settings
+                volume: pad.settings.volume, // Inherit volume from pad settings
               }).chain(
                 pad.fx.pitch,
                 pad.fx.distortion,
@@ -1705,25 +1757,33 @@
               // Start playback at the scheduled time
               tempPlayer.start(time);
               activeTimelinePlayers.add(tempPlayer); // Add to the set of active players
-              console.log(`Scheduled new player for ${eventData.padId} at ${eventData.time}. Total active: ${activeTimelinePlayers.size}`);
+              console.log(
+                `Scheduled new player for ${eventData.padId} at ${eventData.time}. Total active: ${activeTimelinePlayers.size}`
+              );
 
               // Always dispose after playback to prevent memory leaks, removing from set
               // This handles both one-shot and looping samples (if loop is externally stopped)
               tempPlayer.onstop = () => {
-                  console.log(`Player for ${eventData.padId} at ${eventData.time} stopped (onstop callback).`);
-                  try {
-                      if (activeTimelinePlayers.has(tempPlayer)) { // Only dispose if still tracked
-                          tempPlayer.dispose();
-                          activeTimelinePlayers.delete(tempPlayer);
-                          console.log(`Player disposed and removed from set. Total active: ${activeTimelinePlayers.size}`);
-                      } else {
-                          console.log("Player already removed/disposed, skipping double-dispose in onstop.");
-                      }
-                  } catch (e) {
-                      console.error("Error during tempPlayer onstop disposal:", e);
+                console.log(
+                  `Player for ${eventData.padId} at ${eventData.time} stopped (onstop callback).`
+                );
+                try {
+                  if (activeTimelinePlayers.has(tempPlayer)) {
+                    // Only dispose if still tracked
+                    tempPlayer.dispose();
+                    activeTimelinePlayers.delete(tempPlayer);
+                    console.log(
+                      `Player disposed and removed from set. Total active: ${activeTimelinePlayers.size}`
+                    );
+                  } else {
+                    console.log(
+                      "Player already removed/disposed, skipping double-dispose in onstop."
+                    );
                   }
+                } catch (e) {
+                  console.error("Error during tempPlayer onstop disposal:", e);
+                }
               };
-
             }, eventData.time);
           }
         });
@@ -1796,7 +1856,7 @@
         // The frequency resolution (bin size) is sampleRate / fftSize
         // So, max_freq_represented = sampleRate / 2
         const sampleRate = Tone.context.sampleRate;
-        const binSize = (sampleRate / 2) / fft.length;
+        const binSize = sampleRate / 2 / fft.length;
 
         // Approximate ranges in Hz
         const BASS_FREQ_END = 250;
@@ -1806,11 +1866,20 @@
         const TREBLE_FREQ_END = 20000; // Max human hearing
 
         // Calculate bin indices for each range
-        const bassEndBin = Math.min(fft.length, Math.floor(BASS_FREQ_END / binSize));
+        const bassEndBin = Math.min(
+          fft.length,
+          Math.floor(BASS_FREQ_END / binSize)
+        );
         const midStartBin = Math.floor(MID_FREQ_START / binSize);
-        const midEndBin = Math.min(fft.length, Math.floor(MID_FREQ_END / binSize));
+        const midEndBin = Math.min(
+          fft.length,
+          Math.floor(MID_FREQ_END / binSize)
+        );
         const trebleStartBin = Math.floor(TREBLE_FREQ_START / binSize);
-        const trebleEndBin = Math.min(fft.length, Math.floor(TREBLE_FREQ_END / binSize));
+        const trebleEndBin = Math.min(
+          fft.length,
+          Math.floor(TREBLE_FREQ_END / binSize)
+        );
 
         let bassEnergy = 0;
         let midEnergy = 0;
@@ -1895,63 +1964,71 @@
       });
 
       playBtn.addEventListener("click", async () => {
-            try {
-                    if (Tone.Transport.state !== "started" && timelineEventsData.length !== 0) {
-                        await Tone.start();
-                        Tone.Transport.start();
-                        playBtn.textContent = "Playing...";
+        try {
+          if (
+            Tone.Transport.state !== "started" &&
+            timelineEventsData.length !== 0
+          ) {
+            await Tone.start();
+            Tone.Transport.start();
+            playBtn.textContent = "Playing...";
 
-                        let maxTimeSeconds = 0;
-                        timelineEventsData.forEach(event => {
-                            const eventTime = Tone.Time(event.time).toSeconds();
-                            if (eventTime > maxTimeSeconds) maxTimeSeconds = eventTime;
-                        });
-
-                        const padding = 1;
-                        Tone.Transport.scheduleOnce(() => {
-                            handleTransportStop(); // ✅ Reuse stop logic
-                        }, maxTimeSeconds + padding);
-                    }else{
-                        showToast("No events to play. Please add events to the timeline.");
-                    }
-            } catch (error) {
-                console.error("Failed to start Tone.Transport:", error);
-                showToast("Failed to start playback. Check console for details.");
-            }
+            let maxTimeSeconds = 0;
+            timelineEventsData.forEach((event) => {
+              const eventTime = Tone.Time(event.time).toSeconds();
+              if (eventTime > maxTimeSeconds) maxTimeSeconds = eventTime;
             });
 
+            const padding = 1;
+            Tone.Transport.scheduleOnce(() => {
+              handleTransportStop(); // ✅ Reuse stop logic
+            }, maxTimeSeconds + padding);
+          } else {
+            showToast("No events to play. Please add events to the timeline.");
+          }
+        } catch (error) {
+          console.error("Failed to start Tone.Transport:", error);
+          showToast("Failed to start playback. Check console for details.");
+        }
+      });
 
-    stopBtn.addEventListener("click", handleTransportStop);
+      stopBtn.addEventListener("click", handleTransportStop);
 
       function handleTransportStop() {
-            console.log("Transport stopping...");
-            Tone.Transport.stop();
-            Tone.Transport.position = 0;
-            playBtn.textContent = "Play";
+        console.log("Transport stopping...");
+        Tone.Transport.stop();
+        Tone.Transport.position = 0;
+        playBtn.textContent = "Play";
 
-            pads.forEach((pad) => {
-                pad.player.stop();
-            });
+        pads.forEach((pad) => {
+          pad.player.stop();
+        });
 
-            let playersToDispose = Array.from(activeTimelinePlayers);
-            playersToDispose.forEach(player => {
-                try {
-                if (player && typeof player.stop === 'function' && typeof player.dispose === 'function') {
-                    console.log("Disposing player:", player);
-                    player.stop();
-                    player.dispose();
-                } else {
-                    console.warn("Invalid player object:", player);
-                }
-                } catch (e) {
-                console.error("Error during player disposal:", e);
-                }
-            });
+        let playersToDispose = Array.from(activeTimelinePlayers);
+        playersToDispose.forEach((player) => {
+          try {
+            if (
+              player &&
+              typeof player.stop === "function" &&
+              typeof player.dispose === "function"
+            ) {
+              console.log("Disposing player:", player);
+              player.stop();
+              player.dispose();
+            } else {
+              console.warn("Invalid player object:", player);
+            }
+          } catch (e) {
+            console.error("Error during player disposal:", e);
+          }
+        });
 
-            activeTimelinePlayers.clear();
-            console.log("Transport stop complete. Active players:", activeTimelinePlayers.size);
-        }
-
+        activeTimelinePlayers.clear();
+        console.log(
+          "Transport stop complete. Active players:",
+          activeTimelinePlayers.size
+        );
+      }
 
       recordBtn.addEventListener("click", async () => {
         if (Tone.Transport.state !== "started") {
@@ -2080,8 +2157,8 @@
           pad.player.loop = pad.loop;
           // When toggling loop, immediately stop and restart if currently playing
           if (pad.player.state === "started") {
-             pad.player.stop();
-             pad.player.start();
+            pad.player.stop();
+            pad.player.start();
           }
         }
       });
@@ -2169,9 +2246,7 @@
             recordMicBtn.disabled = false;
             trimWaveformBtn.disabled = false;
             recordMicBtn.textContent = "Record Mic";
-            showToast(
-              "Microphone recording finished. Trim and assign to pad."
-            );
+            showToast("Microphone recording finished. Trim and assign to pad.");
             playTrimmedSampleBtn.disabled = false; // Enable play trimmed after recording
           };
 
@@ -2186,9 +2261,7 @@
           );
         } catch (error) {
           console.error("Error accessing microphone:", error);
-          showToast(
-            "Failed to access microphone. Please check permissions."
-          );
+          showToast("Failed to access microphone. Please check permissions.");
         }
       });
 
@@ -2217,7 +2290,7 @@
             trimmedBuffer = null;
             drawWaveform(recordedAudioBuffer);
             showToast("Sample uploaded. Trim and assign to pad.");
-            playTrimmedSampleBtn.disabled = false; 
+            playTrimmedSampleBtn.disabled = false;
             trimWaveformBtn.disabled = false;
           } catch (error) {
             console.error("Error loading audio file:", error);
@@ -2244,8 +2317,8 @@
 
         // If a previous trimmed player exists, stop and dispose it
         if (currentTrimmedSamplePlayer) {
-            currentTrimmedSamplePlayer.stop();
-            currentTrimmedSamplePlayer.dispose();
+          currentTrimmedSamplePlayer.stop();
+          currentTrimmedSamplePlayer.dispose();
         }
 
         // --- NEW LOGIC: Perform trimming on-the-fly for preview ---
@@ -2253,9 +2326,7 @@
         const endPercent = parseFloat(trimEndSlider.value) / 100;
 
         if (startPercent >= endPercent) {
-          showToast(
-            "Trim start cannot be greater than or equal to trim end."
-          );
+          showToast("Trim start cannot be greater than or equal to trim end.");
           // Don't disable play/enable stop here, as it's an invalid state, not a playing state.
           return;
         }
@@ -2294,10 +2365,10 @@
 
         // Clean up after playback ends (for non-looping samples)
         currentTrimmedSamplePlayer.onstop = () => {
-            currentTrimmedSamplePlayer.dispose();
-            currentTrimmedSamplePlayer = null;
-            playTrimmedSampleBtn.disabled = false;
-            stopTrimmedSampleBtn.disabled = true;
+          currentTrimmedSamplePlayer.dispose();
+          currentTrimmedSamplePlayer = null;
+          playTrimmedSampleBtn.disabled = false;
+          stopTrimmedSampleBtn.disabled = true;
         };
 
         // Start the playback
@@ -2326,94 +2397,88 @@
         updateTrimSliderDisplay();
       });
 
-        trimWaveformBtn.addEventListener("click", () => {
-            if (!recordedAudioBuffer) {
-                showToast(
-                    "No sample loaded to trim. Record or upload one first."
-                );
-                return;
-            }
-            
-            if (!selectedPadId) {
-                showToast(
-                    "Please select a pad to assign the trimmed sample to."
-                );
-                return;
-            }
-            
-            trimmedBuffer = null;
-            const startPercent = parseFloat(trimStartSlider.value) / 100;
-            const endPercent = parseFloat(trimEndSlider.value) / 100;
-
-            if (startPercent >= endPercent) {
-                showToast(
-                "Trim start cannot be greater than or equal to trim end."
-                );
-                return;
-            }
-
-            const startTime = recordedAudioBuffer.duration * startPercent;
-            const endTime = recordedAudioBuffer.duration * endPercent;
-            const duration = endTime - startTime;
-
-            // Create a new AudioBuffer for the trimmed section
-            const numChannels = recordedAudioBuffer.numberOfChannels;
-            const sampleRate = recordedAudioBuffer.sampleRate;
-            const frameCount = Math.floor(duration * sampleRate);
-
-            trimmedBuffer = audioContext.createBuffer(
-                numChannels,
-                frameCount,
-                sampleRate
-            );
-
-            for (let channel = 0; channel < numChannels; channel++) {
-                const sourceData = recordedAudioBuffer.getChannelData(channel);
-                const targetData = trimmedBuffer.getChannelData(channel);
-                const startIndex = Math.floor(startTime * sampleRate);
-
-                for (let i = 0; i < frameCount; i++) {
-                targetData[i] = sourceData[startIndex + i];
-                }
-            }
-
-            // Update the waveform canvas to show only the trimmed section
-            recordedAudioBuffer = trimmedBuffer;
-            drawWaveform(recordedAudioBuffer);
-            showToast("Sample trimmed. You can now assign it to a pad.");
-        });
-
-        assignSampleToPadBtn.addEventListener("click", () => {
-            if (!recordedAudioBuffer) {
-                showToast(
-                "No trimmed sample available. Please trim a sample first."
-                );
-                return;
-            }
-            if (!selectedPadId) {
-                showToast(
-                "Please select a pad to assign the trimmed sample to."
-                );
-                return;
-            }
-            assignSampleToPad(selectedPadId, recordedAudioBuffer);
-            showToast(
-                `Trimmed sample assigned to Pad ${selectedPadId.replace("pad", "")}.`
-            );
-        });
-        const resizeObserver = new ResizeObserver(() => {
-        if (waveformStage) {
-            waveformContainerWidth = waveformCanvasContainer.offsetWidth;
-            waveformContainerHeight = waveformCanvasContainer.offsetHeight;
-            waveformStage.width(waveformContainerWidth);
-            waveformStage.height(waveformContainerHeight);
-            trimHighlightRect.width(waveformContainerWidth);
-            trimHighlightRect.height(waveformContainerHeight);
-            trimEndRect.x(waveformContainerWidth);
-            waveformLayer.draw();
+      trimWaveformBtn.addEventListener("click", () => {
+        if (!recordedAudioBuffer) {
+          showToast("No sample loaded to trim. Record or upload one first.");
+          return;
         }
-        });
-        resizeObserver.observe(waveformCanvasContainer);
+
+        if (!selectedPadId) {
+          showToast("Please select a pad to assign the trimmed sample to.");
+          return;
+        }
+
+        trimmedBuffer = null;
+        const startPercent = parseFloat(trimStartSlider.value) / 100;
+        const endPercent = parseFloat(trimEndSlider.value) / 100;
+
+        if (startPercent >= endPercent) {
+          showToast("Trim start cannot be greater than or equal to trim end.");
+          return;
+        }
+
+        const startTime = recordedAudioBuffer.duration * startPercent;
+        const endTime = recordedAudioBuffer.duration * endPercent;
+        const duration = endTime - startTime;
+
+        // Create a new AudioBuffer for the trimmed section
+        const numChannels = recordedAudioBuffer.numberOfChannels;
+        const sampleRate = recordedAudioBuffer.sampleRate;
+        const frameCount = Math.floor(duration * sampleRate);
+
+        trimmedBuffer = audioContext.createBuffer(
+          numChannels,
+          frameCount,
+          sampleRate
+        );
+
+        for (let channel = 0; channel < numChannels; channel++) {
+          const sourceData = recordedAudioBuffer.getChannelData(channel);
+          const targetData = trimmedBuffer.getChannelData(channel);
+          const startIndex = Math.floor(startTime * sampleRate);
+
+          for (let i = 0; i < frameCount; i++) {
+            targetData[i] = sourceData[startIndex + i];
+          }
+        }
+
+        // Update the waveform canvas to show only the trimmed section
+        recordedAudioBuffer = trimmedBuffer;
+        drawWaveform(recordedAudioBuffer);
+        showToast("Sample trimmed. You can now assign it to a pad.");
+      });
+
+      assignSampleToPadBtn.addEventListener("click", () => {
+        if (!recordedAudioBuffer) {
+          showToast("No trimmed sample available. Please trim a sample first.");
+          return;
+        }
+        if (!selectedPadId) {
+          showToast("Please select a pad to assign the trimmed sample to.");
+          return;
+        }
+        assignSampleToPad(selectedPadId, recordedAudioBuffer);
+        showToast(
+          `Trimmed sample assigned to Pad ${selectedPadId.replace("pad", "")}.`
+        );
+      });
+      const resizeObserver = new ResizeObserver(() => {
+        if (waveformStage) {
+          waveformContainerWidth = waveformCanvasContainer.offsetWidth;
+          waveformContainerHeight = waveformCanvasContainer.offsetHeight;
+          waveformStage.width(waveformContainerWidth);
+          waveformStage.height(waveformContainerHeight);
+          trimHighlightRect.width(waveformContainerWidth);
+          trimHighlightRect.height(waveformContainerHeight);
+          trimEndRect.x(waveformContainerWidth);
+          waveformLayer.draw();
+        }
+      });
+      resizeObserver.observe(waveformCanvasContainer);
+
+      clearTimelineBtn.addEventListener("click", () => {
+        clearTimeline();
+      });
     </script>
   </body>
 </html>
