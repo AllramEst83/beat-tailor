@@ -10,6 +10,98 @@
   <body>
     <header class="sticky-header flex items-center justify-between">
       <div class="ml-8 font-bold text-2xl text-pink-300">Beat Tailor</div>
+      <div class="relative mr-8">
+        <button
+          id="headerMenuButton"
+          class="header-icon-btn flex items-center justify-center rounded-full bg-pink-300 hover:bg-pink-400 transition-colors w-12 h-12 shadow-lg focus:outline-none"
+        >
+          <!-- Record SVG Icon -->
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="w-7 h-7 text-gray-800"
+            fill="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <circle cx="12" cy="12" r="8" />
+          </svg>
+        </button>
+        <!-- Dropdown menu (hidden by default, shown on click with JS) -->
+        <div
+          id="headerMenuDropdown"
+          class="header-menu-dropdown absolute right-0 mt-2 w-44 bg-white rounded-lg shadow-xl border border-gray-200 py-2 z-50 hidden"
+        >
+          <button
+            class="header-menu-item flex items-center gap-2 px-4 py-2 w-full hover:bg-pink-100 transition-colors rounded-t-lg"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="w-5 h-5 text-red-500"
+              fill="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <circle cx="12" cy="12" r="7" />
+            </svg>
+            Record
+          </button>
+          <button
+            class="header-menu-item flex items-center gap-2 px-4 py-2 w-full hover:bg-pink-100 transition-colors"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="w-5 h-5 text-gray-700"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              viewBox="0 0 24 24"
+            >
+              <rect
+                x="6"
+                y="6"
+                width="12"
+                height="12"
+                rx="2"
+                fill="currentColor"
+              />
+            </svg>
+            Stop Recording
+          </button>
+          <button
+            class="header-menu-item flex items-center gap-2 px-4 py-2 w-full hover:bg-pink-100 transition-colors"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="w-5 h-5 text-green-500"
+              fill="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <polygon points="8,5 19,12 8,19" />
+            </svg>
+            Play
+          </button>
+          <button
+            class="header-menu-item flex items-center gap-2 px-4 py-2 w-full hover:bg-pink-100 transition-colors rounded-b-lg"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="w-5 h-5 text-gray-700"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              viewBox="0 0 24 24"
+            >
+              <rect
+                x="6"
+                y="6"
+                width="12"
+                height="12"
+                rx="2"
+                fill="currentColor"
+              />
+            </svg>
+            Stop
+          </button>
+        </div>
+      </div>
     </header>
     <div class="rack-container flex flex-col items-center justify-center gap-8">
       <div
@@ -184,6 +276,8 @@
       const audioOutputDevicesSelect =
         document.getElementById("audioOutputDevices");
       const spinner = document.getElementById("spinner");
+      const headerMenuButton = document.getElementById("headerMenuButton");
+      const headerMenuDropdown = document.getElementById("headerMenuDropdown");
 
       // --- State Variables ---
       let isRecording = false;
@@ -945,6 +1039,54 @@
 
       resetButton.addEventListener("click", resetApplication); // New Reset Button Listener
 
+      function closeHeaderMenu() {
+        headerMenuDropdown.classList.add("hidden");
+        headerMenuButton.setAttribute("aria-expanded", "false");
+      }
+
+      function openHeaderMenu() {
+        headerMenuDropdown.classList.remove("hidden");
+        headerMenuButton.setAttribute("aria-expanded", "true");
+      }
+
+      headerMenuButton.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const isOpen = !headerMenuDropdown.classList.contains("hidden");
+        if (isOpen) {
+          closeHeaderMenu();
+        } else {
+          openHeaderMenu();
+        }
+      });
+
+      // Close menu when clicking outside
+      document.addEventListener("click", (e) => {
+        if (!headerMenuDropdown.classList.contains("hidden")) {
+          if (
+            !headerMenuDropdown.contains(e.target) &&
+            e.target !== headerMenuButton
+          ) {
+            closeHeaderMenu();
+          }
+        }
+      });
+
+      // Close menu on Escape key
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape") {
+          closeHeaderMenu();
+        }
+      });
+
+      // Dropdown menu button close logic
+      const headerMenuItems =
+        headerMenuDropdown.querySelectorAll(".header-menu-item");
+      headerMenuItems.forEach((btn) => {
+        btn.addEventListener("click", () => {
+          closeHeaderMenu();
+        });
+      });
+
       // Initialize on window load
       window.onload = async () => {
         // Function to set canvas dimensions correctly for high-DPI screens
@@ -979,5 +1121,42 @@
         );
       };
     </script>
+
+    <style>
+      .header-icon-btn {
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      }
+      .header-icon-btn:active {
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+      }
+      .header-menu-dropdown {
+        min-width: 11rem;
+        animation: fadeIn 0.18s;
+      }
+      .header-menu-item {
+        font-weight: 500;
+        font-size: 1rem;
+        color: #333;
+        background: none;
+        border: none;
+        outline: none;
+        cursor: pointer;
+        transition: background 0.15s;
+        text-align: left;
+      }
+      .header-menu-item svg {
+        flex-shrink: 0;
+      }
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(-8px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+    </style>
   </body>
 </html>
