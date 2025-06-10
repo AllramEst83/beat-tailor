@@ -1,0 +1,2419 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Drum Sampler & Sequencer</title>
+    <link rel="icon" type="image/png" href="assets/icons/beat-tailor.png" />
+
+    <style>
+      /* Apply Inter font and basic background */
+      body {
+        font-family: "Inter", sans-serif;
+        background-color: #f7fafc; /* Tailwind's gray-50 */
+      }
+      /* Style for drum pads when active (playing) */
+      .drum-pad.active {
+        transform: scale(0.95);
+        box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.7),
+          0 0 10px rgba(0, 0, 0, 0.3);
+      }
+      /* Style for the currently selected drum pad */
+      .drum-pad.selected {
+        border: 3px solid #6366f1; /* Indigo-500 */
+        box-shadow: 0 0 0 3px #6366f1;
+      }
+      /* Custom styling for range input thumbs (for better cross-browser consistency) */
+      input[type="range"]::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 16px;
+        height: 16px;
+        background: #6366f1; /* Indigo-500 */
+        cursor: pointer;
+        border-radius: 50%;
+      }
+      input[type="range"]::-moz-range-thumb {
+        width: 16px;
+        height: 16px;
+        background: #6366f1; /* Indigo-500 */
+        cursor: pointer;
+        border-radius: 50%;
+      }
+      /* Custom scrollbar for better aesthetics */
+      ::-webkit-scrollbar {
+        width: 10px;
+        height: 10px;
+      }
+      ::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 10px;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #888;
+        border-radius: 10px;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: #555;
+      }
+    </style>
+  </head>
+  <body
+    class="bg-gradient-to-br from-pink-200 via-blue-200 to-green-200 min-h-screen p-4 flex flex-col items-center"
+  >
+    <!-- Main Application Container -->
+    <div
+      id="app"
+      class="bg-white p-6 rounded-3xl shadow-2xl w-full max-w-7xl flex flex-col lg:flex-row gap-6"
+    >
+      <!-- Left Column: Global Controls & Pads -->
+      <div class="flex flex-col gap-6 lg:w-1/3">
+        <!-- Global Controls Section -->
+        <div class="bg-blue-100 p-5 rounded-2xl shadow-lg">
+          <h2 class="text-xl font-bold text-blue-800 mb-4">Global Controls</h2>
+          <div class="grid grid-cols-2 gap-4 mb-4">
+            <!-- BPM Control -->
+            <div>
+              <label
+                for="bpmSlider"
+                class="block text-sm font-medium text-blue-700"
+                >BPM:</label
+              >
+              <input
+                type="range"
+                id="bpmSlider"
+                min="60"
+                max="200"
+                value="120"
+                class="w-full h-2 bg-blue-300 rounded-lg appearance-none cursor-pointer"
+              />
+              <span id="bpmValue" class="text-blue-600 text-sm">120</span>
+            </div>
+            <!-- Master Volume Control -->
+            <div>
+              <label
+                for="masterVolume"
+                class="block text-sm font-medium text-blue-700"
+                >Master Volume:</label
+              >
+              <input
+                type="range"
+                id="masterVolume"
+                min="-60"
+                max="0"
+                value="-10"
+                step="1"
+                class="w-full h-2 bg-blue-300 rounded-lg appearance-none cursor-pointer"
+              />
+              <span id="masterVolumeValue" class="text-blue-600 text-sm"
+                >-10 dB</span
+              >
+            </div>
+          </div>
+          <!-- Play, Stop, Record Buttons -->
+          <div class="grid grid-cols-3 gap-3">
+            <button
+              id="playBtn"
+              class="bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-4 rounded-xl shadow-md transition duration-200"
+            >
+              Play
+            </button>
+            <button
+              id="stopBtn"
+              class="bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-4 rounded-xl shadow-md transition duration-200"
+            >
+              Stop
+            </button>
+            <button
+              id="recordBtn"
+              class="bg-purple-500 hover:bg-purple-600 text-white font-semibold py-2 px-4 rounded-xl shadow-md transition duration-200"
+            >
+              Record
+            </button>
+            <!-- Download Recording Link (initially hidden) -->
+            <a
+              id="downloadRecording"
+              class="col-span-3 bg-indigo-500 hover:bg-indigo-600 text-white font-semibold py-2 px-4 rounded-xl shadow-md text-center cursor-pointer hidden"
+              download="recording.wav"
+              >Download Recording</a
+            >
+          </div>
+        </div>
+
+        <!-- Visual EQ Analyzer Section -->
+        <div class="bg-orange-100 p-5 rounded-2xl shadow-lg">
+            <h2 class="text-xl font-bold text-orange-800 mb-4">
+              Visual EQ Analyzer
+            </h2>
+            <div
+              id="eqVisualizerContainer"
+              class="w-full bg-gray-50 rounded-lg border border-gray-300"
+              style="height: 100px"
+            >
+              <canvas id="eqVisualizerCanvas" class="w-full h-full"></canvas>
+            </div>
+            <div class="flex flex-row justify-between mt-1 px-2 text-sm font-medium text-gray-700 select-none">
+          <span class="flex-1 text-center">Bass</span>
+          <span class="flex-1 text-center">Mid</span>
+          <span class="flex-1 text-center">Treble</span>
+        </div>
+          </div>
+
+        <!-- Drum Pads Section -->
+        <div class="bg-yellow-100 p-5 rounded-2xl shadow-lg flex-grow">
+          <h2 class="text-xl font-bold text-yellow-800 mb-4">Drum Pads</h2>
+          <div id="drumPadsContainer" class="grid grid-cols-3 gap-4">
+            <!-- Drum pads will be dynamically generated here by JavaScript -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Column: FX Rack, Recorder, Timeline, EQ -->
+      <div class="flex flex-col gap-6 lg:w-2/3">
+        <!-- Contextual FX Rack Section -->
+        <div id="fxRack" class="bg-pink-100 p-5 rounded-2xl shadow-lg">
+          <h2 class="text-xl font-bold text-pink-800 mb-4">
+            FX Rack (Selected Pad: <span id="selectedPadName">None</span>)
+          </h2>
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <!-- Pad-specific controls will be dynamically updated here by JavaScript -->
+            <!-- Volume Control -->
+            <div class="flex flex-col gap-2">
+              <label
+                for="padVolume"
+                class="block text-sm font-medium text-pink-700"
+                >Volume:</label
+              >
+              <input
+                type="range"
+                id="padVolume"
+                min="-60"
+                max="0"
+                value="0"
+                step="1"
+                class="w-full h-2 bg-pink-300 rounded-lg appearance-none cursor-pointer"
+              />
+              <span id="padVolumeValue" class="text-pink-600 text-sm"
+                >0 dB</span
+              >
+            </div>
+            <!-- Speed (Rate) Control -->
+            <div class="flex flex-col gap-2">
+              <label
+                for="padSpeed"
+                class="block text-sm font-medium text-pink-700"
+                >Speed (Rate):</label
+              >
+              <input
+                type="range"
+                id="padSpeed"
+                min="0.1"
+                max="2"
+                value="1"
+                step="0.01"
+                class="w-full h-2 bg-pink-300 rounded-lg appearance-none cursor-pointer"
+              />
+              <span id="padSpeedValue" class="text-pink-600 text-sm">1x</span>
+            </div>
+            <!-- Pitch Shift Control -->
+            <div class="flex flex-col gap-2">
+              <label
+                for="padPitch"
+                class="block text-sm font-medium text-pink-700"
+                >Pitch Shift:</label
+              >
+              <input
+                type="range"
+                id="padPitch"
+                min="-12"
+                max="12"
+                value="0"
+                step="1"
+                class="w-full h-2 bg-pink-300 rounded-lg appearance-none cursor-pointer"
+              />
+              <span id="padPitchValue" class="text-pink-600 text-sm">0 semitones</span
+              >
+            </div>
+            <!-- Reverb Wet Control -->
+            <div class="flex flex-col gap-2">
+              <label
+                for="reverbWet"
+                class="block text-sm font-medium text-pink-700"
+                >Reverb Wet:</label
+              >
+              <input
+                type="range"
+                id="reverbWet"
+                min="0"
+                max="1"
+                value="0"
+                step="0.01"
+                class="w-full h-2 bg-pink-300 rounded-lg appearance-none cursor-pointer"
+              />
+              <span id="reverbWetValue" class="text-pink-600 text-sm">0%</span>
+            </div>
+            <!-- Delay Wet Control -->
+            <div class="flex flex-col gap-2">
+              <label
+                for="delayWet"
+                class="block text-sm font-medium text-pink-700"
+                >Delay Wet:</label
+              >
+              <input
+                type="range"
+                id="delayWet"
+                min="0"
+                max="1"
+                value="0"
+                step="0.01"
+                class="w-full h-2 bg-pink-300 rounded-lg appearance-none cursor-pointer"
+              />
+              <span id="delayWetValue" class="text-pink-600 text-sm">0%</span>
+            </div>
+            <!-- Distortion Wet Control -->
+            <div class="flex flex-col gap-2">
+              <label
+                for="distortionWet"
+                class="block text-sm font-medium text-pink-700"
+                >Distortion Wet:</label
+              >
+              <input
+                type="range"
+                id="distortionWet"
+                min="0"
+                max="1"
+                value="0"
+                step="0.01"
+                class="w-full h-2 bg-pink-300 rounded-lg appearance-none cursor-pointer"
+              />
+              <span id="distortionWetValue" class="text-pink-600 text-sm"
+                >0%</span
+              >
+            </div>
+            <!-- High-Pass Filter Frequency Control -->
+            <div class="flex flex-col gap-2">
+              <label
+                for="highPassFreq"
+                class="block text-sm font-medium text-pink-700"
+                >HP Filter Freq:</label
+              >
+              <input
+                type="range"
+                id="highPassFreq"
+                min="20"
+                max="20000"
+                value="20"
+                step="10"
+                class="w-full h-2 bg-pink-300 rounded-lg appearance-none cursor-pointer"
+              />
+              <span id="highPassFreqValue" class="text-pink-600 text-sm"
+                >20 Hz</span
+              >
+            </div>
+            <!-- Low-Pass Filter Frequency Control -->
+            <div class="flex flex-col gap-2">
+              <label
+                for="lowPassFreq"
+                class="block text-sm font-medium text-pink-700"
+                >LP Filter Freq:</label
+              >
+              <input
+                type="range"
+                id="lowPassFreq"
+                min="20"
+                max="20000"
+                value="20000"
+                step="10"
+                class="w-full h-2 bg-pink-300 rounded-lg appearance-none cursor-pointer"
+              />
+              <span id="lowPassFreqValue" class="text-pink-600 text-sm"
+                >20000 Hz</span
+
+              >
+            </div>
+            <!-- Loop Toggle Checkbox -->
+            <div class="flex items-center gap-2">
+              <input
+                type="checkbox"
+                id="padLoopToggle"
+                class="w-4 h-4 text-pink-600 bg-gray-100 rounded border-gray-300 focus:ring-pink-500"
+              />
+              <label
+                for="padLoopToggle"
+                class="text-sm font-medium text-pink-700"
+                >Loop Sample</label
+              >
+            </div>
+          </div>
+          <!-- EQ3 Controls -->
+          <h3 class="text-lg font-bold text-pink-800 mt-6 mb-3">
+            EQ3 Controls
+          </h3>
+          <div class="grid grid-cols-3 gap-4">
+            <!-- Bass EQ Control -->
+            <div class="flex flex-col gap-2">
+              <label
+                for="eqBass"
+                class="block text-sm font-medium text-pink-700"
+                >Bass:</label
+              >
+              <input
+                type="range"
+                id="eqBass"
+                min="-12"
+                max="12"
+                value="0"
+                step="1"
+                class="w-full h-2 bg-pink-300 rounded-lg appearance-none cursor-pointer"
+              />
+              <span id="eqBassValue" class="text-pink-600 text-sm">0 dB</span>
+            </div>
+            <!-- Mid EQ Control -->
+            <div class="flex flex-col gap-2">
+              <label for="eqMid" class="block text-sm font-medium text-pink-700"
+                >Mid:</label
+              >
+              <input
+                type="range"
+                id="eqMid"
+                min="-12"
+                max="12"
+                value="0"
+                step="1"
+                class="w-full h-2 bg-pink-300 rounded-lg appearance-none cursor-pointer"
+              />
+              <span id="eqMidValue" class="text-pink-600 text-sm">0 dB</span>
+            </div>
+            <!-- Treble EQ Control -->
+            <div class="flex flex-col gap-2">
+              <label
+                for="eqTreble"
+                class="block text-sm font-medium text-pink-700"
+                >Treble:</label
+              >
+              <input
+                type="range"
+                id="eqTreble"
+                min="-12"
+                max="12"
+                value="0"
+                step="1"
+                class="w-full h-2 bg-pink-300 rounded-lg appearance-none cursor-pointer"
+              />
+              <span id="eqTrebleValue" class="text-pink-600 text-sm">0 dB</span>
+            </div>
+          </div>
+          <!-- New Play/Stop Pad Buttons -->
+          <div class="grid grid-cols-2 gap-3 mt-4">
+            <button
+              id="playSinglePadBtn"
+              class="bg-indigo-500 hover:bg-indigo-600 text-white font-semibold py-2 px-4 rounded-xl shadow-md transition duration-200"
+            >
+              Play Pad
+            </button>
+            <button
+              id="stopSinglePadBtn"
+              class="bg-gray-400 hover:bg-gray-500 text-white font-semibold py-2 px-4 rounded-xl shadow-md transition duration-200"
+              disabled
+            >
+              Stop Pad
+            </button>
+          </div>
+        </div>
+
+        <!-- Sample Recorder & Trimmer Section -->
+        <div class="bg-purple-100 p-5 rounded-2xl shadow-lg">
+          <h2 class="text-xl font-bold text-purple-800 mb-4">
+            Sample Recorder & Trimmer
+          </h2>
+          <div class="flex flex-wrap gap-4 mb-4">
+            <button
+              id="recordMicBtn"
+              class="bg-purple-500 hover:bg-purple-600 text-white font-semibold py-2 px-4 rounded-xl shadow-md transition duration-200"
+            >
+              Record Mic
+            </button>
+            <button
+              id="stopMicRecordBtn"
+              class="bg-gray-400 hover:bg-gray-500 text-white font-semibold py-2 px-4 rounded-xl shadow-md transition duration-200"
+              disabled
+            >
+              Stop Recording
+            </button>
+            <input
+              type="file"
+              id="sampleUpload"
+              accept="audio/*"
+              class="hidden"
+            />
+            <button
+              id="uploadSampleBtn"
+              class="bg-teal-500 hover:bg-teal-600 text-white font-semibold py-2 px-4 rounded-xl shadow-md transition duration-200"
+            >
+              Upload Sample
+            </button>
+            <button
+              id="playTrimmedSampleBtn"
+              class="bg-yellow-500 hover:bg-yellow-600 text-white font-semibold py-2 px-4 rounded-xl shadow-md transition duration-200"
+              disabled
+            >
+              Play
+            </button>
+            <button
+              id="stopTrimmedSampleBtn"
+              class="bg-red-400 hover:bg-red-500 text-white font-semibold py-2 px-4 rounded-xl shadow-md transition duration-200"
+              disabled
+            >
+              Stop
+            </button>
+            <button
+              id="trimWaveformBtn"
+              class="bg-lime-500 hover:bg-lime-600 text-white font-semibold py-2 px-4 rounded-xl shadow-md transition duration-200"
+              disabled
+            >
+              Trim
+            </button>
+          </div>
+          <!-- Waveform Canvas Container (for Konva.js) -->
+          <div
+            id="waveformCanvasContainer"
+            class="w-full bg-gray-50 rounded-lg border border-gray-300 overflow-hidden relative"
+            style="height: 150px"
+          >
+            <!-- Konva.js waveform canvas will be rendered here -->
+          </div>
+          <!-- Trim Controls -->
+          <div class="mt-4 flex flex-wrap gap-4 items-center">
+            <button
+              id="assignSampleToPadBtn"
+              class="bg-indigo-500 hover:bg-indigo-600 text-white font-semibold py-2 px-4 rounded-xl shadow-md transition duration-200"
+            >
+              Assign to Pad
+            </button>
+            <div class="flex-grow min-w-[120px]">
+              <label
+                for="trimStart"
+                class="block text-sm font-medium text-purple-700"
+                >Trim Start:</label
+              >
+              <input
+                type="range"
+                id="trimStart"
+                min="0"
+                max="100"
+                value="0"
+                step="0.1"
+                class="w-full h-2 bg-purple-300 rounded-lg appearance-none cursor-pointer"
+              />
+              <span id="trimStartValue" class="text-purple-600 text-sm"
+                >0%</span
+              >
+            </div>
+            <div class="flex-grow min-w-[120px]">
+              <label
+                for="trimEnd"
+                class="block text-sm font-medium text-purple-700"
+                >Trim End:</label
+              >
+              <input
+                type="range"
+                id="trimEnd"
+                min="0"
+                max="100"
+                value="100"
+                step="0.1"
+                class="w-full h-2 bg-purple-300 rounded-lg appearance-none cursor-pointer"
+              />
+              <span id="trimEndValue" class="text-purple-600 text-sm"
+                >100%</span
+              >
+            </div>
+          </div>
+        </div>
+
+        <!-- Timeline Sequencer Section -->
+        <div class="bg-green-100 p-5 rounded-2xl shadow-lg flex-grow">
+          <h2 class="text-xl font-bold text-green-800 mb-4">
+            Timeline Sequencer
+          </h2>
+          <!-- Timeline Canvas Container (for Konva.js) -->
+          <div
+            id="timelineCanvasContainer"
+            class="w-full bg-gray-50 rounded-lg border border-gray-300 overflow-auto"
+            style="height: 250px"
+          >
+            <!-- Konva.js timeline canvas will be rendered here -->
+          </div>
+          <div class="mt-4 flex justify-between items-center">
+            <span class="text-green-700 text-sm"
+              >Click grid to add / Double-click to remove</span
+            >
+            <button
+              id="clearTimelineBtn"
+              class="bg-red-400 hover:bg-red-500 text-white font-semibold py-1 px-3 rounded-md shadow-sm transition duration-200"
+            >
+              Clear Timeline
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Tone.js CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.min.js"></script>
+    <!-- Konva.js CDN -->
+    <script src="https://unpkg.com/konva@9.3.6/konva.min.js"></script>
+    <script>
+      let isAppInitialized = false; // Flag to track if the app's audio and visuals are initialized
+
+      // Ensure Tone.js context is started on user interaction (first click/touch)
+      document.documentElement.addEventListener("mousedown", () => {
+        if (Tone.context.state !== "running") {
+          Tone.start().then(() => {
+            console.log("Tone.js context started.");
+            // Initialize app components only after audio context is running
+            if (!isAppInitialized) {
+              initAppAudioAndVisuals();
+              isAppInitialized = true;
+            }
+          });
+        } else {
+          // If context is already running, and app not initialized (e.g. from a quick click before load),
+          // ensure initialization still happens.
+          if (!isAppInitialized) {
+            initAppAudioAndVisuals();
+            isAppInitialized = true;
+          }
+        }
+      });
+      // Also listen for touchstart for mobile devices
+      document.documentElement.addEventListener("touchstart", () => {
+        if (Tone.context.state !== "running") {
+          Tone.start().then(() => {
+            console.log("Tone.js context started (from touch).");
+            if (!isAppInitialized) {
+              initAppAudioAndVisuals();
+              isAppInitialized = true;
+            }
+          });
+        } else {
+          if (!isAppInitialized) {
+            initAppAudioAndVisuals();
+            isAppInitialized = true;
+          }
+        }
+      });
+
+      // Function to encapsulate all initializations that depend on Tone.js context
+      function initAppAudioAndVisuals() {
+        initializePads();
+        setupMasterRecorder(); // This now also sets up the analyser
+        initWaveformKonva();
+        initTimelineKonva();
+        initEqVisualizer(); // Uses the new analyser
+        selectPad(pads[0].id); // Select the first pad by default
+      }
+
+      // --- Global Variables ---
+      const audioContext = new (window.AudioContext ||
+        window.webkitAudioContext)();
+      let pads = []; // Array to hold all pad objects
+      let selectedPadId = null; // ID of the currently selected pad
+      let masterRecorder; // Tone.Recorder for master output
+      let micRecorder; // MediaRecorder for microphone input
+      let recordedAudioBuffer = null; // Stores the AudioBuffer from mic or upload
+      let eqAnalyser; // Tone.Analyser for EQ visualization
+
+      // Global variable to hold the currently playing trimmed sample player
+      let currentTrimmedSamplePlayer = null;
+      // Set to keep track of active Tone.Players created by the timeline scheduler
+      let activeTimelinePlayers = new Set();
+
+      // Konva.js variables for Waveform Trimmer
+      let waveformStage,
+        waveformLayer,
+        waveformLine,
+        trimStartRect,
+        trimEndRect,
+        trimHighlightRect;
+      let waveformContainerWidth, waveformContainerHeight;
+
+      // Konva.js variables for Timeline Sequencer
+      let timelineStage, timelineLayer;
+      // timelineEventsData stores { id: string, padId: string, time: string (Tone.js format) }
+      let timelineEventsData = [];
+      // timelineEventsKonva stores references to Konva.Rect objects on the timeline (not strictly necessary to store separately if re-rendering all, but useful for direct manipulation)
+      let timelineEventsKonva = [];
+      const timelineCellSize = 40; // Size of each grid cell (px)
+      const timelineBeatsPerMeasure = 4;
+      const timelineSubdivision = 16; // 16th notes per measure for snapping (4 beats * 4 sixteenths per beat)
+      const timelineTotalMeasures = 8; // Number of measures to display on timeline
+      const timelineTotalCellsX = timelineTotalMeasures * timelineSubdivision;
+      const timelineNumPads = 6; // Corresponds to the number of drum pads
+
+      // Canvas for EQ Visualizer
+      let eqVisualizerCanvas;
+      let eqVisualizerCtx;
+      let eqVisualizerAnimationFrameId;
+
+      // Map to store active pad press animations (for visual feedback)
+      const activePadAnimations = new Map();
+      let trimmedBuffer = null;
+
+      // --- UI Elements ---
+      const drumPadsContainer = document.getElementById("drumPadsContainer");
+      const selectedPadNameSpan = document.getElementById("selectedPadName");
+
+      // Global Controls
+      const bpmSlider = document.getElementById("bpmSlider");
+      const bpmValueSpan = document.getElementById("bpmValue");
+      const masterVolumeSlider = document.getElementById("masterVolume");
+      const masterVolumeValueSpan =
+        document.getElementById("masterVolumeValue");
+      const playBtn = document.getElementById("playBtn");
+      const stopBtn = document.getElementById("stopBtn");
+      const recordBtn = document.getElementById("recordBtn");
+      const downloadRecordingLink =
+        document.getElementById("downloadRecording");
+
+      // FX Rack Controls
+      const padVolumeSlider = document.getElementById("padVolume");
+      const padVolumeValueSpan = document.getElementById("padVolumeValue");
+      const padSpeedSlider = document.getElementById("padSpeed");
+      const padSpeedValueSpan = document.getElementById("padSpeedValue");
+      const padPitchSlider = document.getElementById("padPitch");
+      const padPitchValueSpan = document.getElementById("padPitchValue");
+      const reverbWetSlider = document.getElementById("reverbWet");
+      const reverbWetValueSpan = document.getElementById("reverbWetValue");
+      const delayWetSlider = document.getElementById("delayWet");
+      const delayWetValueSpan = document.getElementById("delayWetValue");
+      const distortionWetSlider = document.getElementById("distortionWet");
+      const distortionWetValueSpan =
+        document.getElementById("distortionWetValue");
+      const highPassFreqSlider = document.getElementById("highPassFreq");
+      const highPassFreqValueSpan =
+        document.getElementById("highPassFreqValue");
+      const lowPassFreqSlider = document.getElementById("lowPassFreq");
+      const lowPassFreqValueSpan = document.getElementById("lowPassFreqValue");
+      const padLoopToggle = document.getElementById("padLoopToggle");
+      const eqBassSlider = document.getElementById("eqBass");
+      const eqBassValueSpan = document.getElementById("eqBassValue");
+      const eqMidSlider = document.getElementById("eqMid");
+      const eqMidValueSpan = document.getElementById("eqMidValue");
+      const eqTrebleSlider = document.getElementById("eqTreble");
+      const eqTrebleValueSpan = document.getElementById("eqTrebleValue");
+
+      // New FX Rack Buttons
+      const playSinglePadBtn = document.getElementById("playSinglePadBtn");
+      const stopSinglePadBtn = document.getElementById("stopSinglePadBtn");
+
+      // Sample Recorder & Trimmer Controls
+      const recordMicBtn = document.getElementById("recordMicBtn");
+      const stopMicRecordBtn = document.getElementById("stopMicRecordBtn");
+      const sampleUploadInput = document.getElementById("sampleUpload");
+      const uploadSampleBtn = document.getElementById("uploadSampleBtn");
+      const playTrimmedSampleBtn = document.getElementById(
+        "playTrimmedSampleBtn"
+      );
+      const stopTrimmedSampleBtn = document.getElementById(
+        "stopTrimmedSampleBtn"
+      ); // New stop button for trimmed sample
+      const waveformCanvasContainer = document.getElementById(
+        "waveformCanvasContainer"
+      );
+      const assignSampleToPadBtn = document.getElementById("assignSampleToPadBtn");
+      const trimStartSlider = document.getElementById("trimStart");
+      const trimStartValueSpan = document.getElementById("trimStartValue");
+      const trimEndSlider = document.getElementById("trimEnd");
+      const trimEndValueSpan = document.getElementById("trimEndValue");
+
+      // Timeline Sequencer Controls
+      const timelineCanvasContainer = document.getElementById(
+        "timelineCanvasContainer"
+      );
+      const clearTimelineBtn = document.getElementById("clearTimelineBtn");
+      const trimWaveformBtn = document.getElementById("trimWaveformBtn");
+      // --- Helper Functions ---
+
+      /**
+       * Displays a custom message box instead of native alert/confirm.
+       * @param {string} message The message to display.
+       */
+      function showToast(message) {
+        const toast = document.createElement("div");
+        toast.className =
+          "fixed bottom-4 right-4 bg-indigo-500 text-white font-semibold py-2 px-4 rounded-xl shadow-md transition duration-200 z-50";
+        toast.textContent = message;
+
+        document.body.appendChild(toast);
+
+        // Automatically remove the toast after 3 seconds
+        setTimeout(() => {
+          toast.classList.add("opacity-0");
+          setTimeout(() => toast.remove(), 500); // Wait for transition to complete
+        }, 3000);
+      }
+
+      // Example usage
+      // showToast("This is a toaster notification.");
+
+      // --- Tone.js & Pad Initialization ---
+
+      /**
+       * Initializes all drum pads with Tone.js players, effects, and connects them.
+       */
+      function initializePads() {
+        for (let i = 0; i < timelineNumPads; i++) {
+          const pad = {
+            id: `pad${i + 1}`,
+            player: new Tone.Player(),
+            gainNode: new Tone.Gain(0), // Initial volume 0dB
+            loop: false,
+            fx: {
+              pitch: new Tone.PitchShift(0),
+              delay: new Tone.FeedbackDelay("8n", 0), // Initial feedback 0
+              reverb: new Tone.Reverb(0.5), // Initial decay 0.5s
+              distortion: new Tone.Distortion(0), // Initial amount 0
+              highPass: new Tone.Filter(20, "highpass"),
+              lowPass: new Tone.Filter(20000, "lowpass"),
+              eq: new Tone.EQ3(0, 0, 0), // Bass, Mid, Treble gains in dB
+            },
+            settings: {
+              speed: 1, // Playback rate
+              pitch: 0, // Pitch shift in semitones
+              volume: 0, // Volume in dB
+              reverbWet: 0, // Reverb dry/wet mix (0-1)
+              delayWet: 0, // Delay dry/wet mix (0-1)
+              distortionWet: 0, // Distortion dry/wet mix (0-1)
+              highPassFreq: 20, // High-pass filter frequency in Hz
+              lowPassFreq: 20000, // Low-pass filter frequency in Hz
+              eqBass: 0, // EQ Bass gain in dB
+              eqMid: 0, // EQ Mid gain in dB
+              eqTreble: 0, // EQ Treble gain in dB
+            },
+            isSelected: false,
+            waveformBuffer: null, // Stores the AudioBuffer for the pad's sample
+            timelineEvents: [], // Events scheduled for this specific pad
+          };
+
+          // Chain the Tone.js nodes for the pad:
+          // player -> pitch -> distortion -> highPass -> lowPass -> delay -> reverb -> eq -> gainNode -> Tone.Destination
+          pad.player.chain(
+            pad.fx.pitch,
+            pad.fx.distortion,
+            pad.fx.highPass,
+            pad.fx.lowPass,
+            pad.fx.delay,
+            pad.fx.reverb,
+            pad.fx.eq,
+            pad.gainNode,
+            Tone.Destination // Connect to the master output
+          );
+
+          // Set initial wet values for effects that have them
+          pad.fx.distortion.wet.value = pad.settings.distortionWet;
+          pad.fx.delay.wet.value = pad.settings.delayWet;
+          pad.fx.reverb.wet.value = pad.settings.reverbWet;
+
+          pads.push(pad);
+          createPadUI(pad); // Create the HTML UI for the pad
+        }
+        // Set initial master volume
+        Tone.Destination.volume.value = masterVolumeSlider.value;
+
+        // Load a default sample for Pad 1 to ensure sound on load
+        loadDefaultSampleToPad1();
+      }
+
+      /**
+       * Loads a simple default sine wave sample into Pad 1.
+       */
+      function loadDefaultSampleToPad1() {
+        // Create a simple sine wave buffer
+        const sampleRate = audioContext.sampleRate;
+        const duration = 0.2; // 0.2 seconds
+        const frameCount = sampleRate * duration;
+        const audioBuffer = audioContext.createBuffer(
+          1,
+          frameCount,
+          sampleRate
+        );
+        const channelData = audioBuffer.getChannelData(0);
+        const frequency = 440; // A4 note
+
+        for (let i = 0; i < frameCount; i++) {
+          channelData[i] = Math.sin(2 * Math.PI * frequency * (i / sampleRate));
+        }
+
+        // Assign to Pad 1
+        const pad1 = pads[0];
+        if (pad1) {
+          pad1.player.buffer.set(audioBuffer);
+          pad1.waveformBuffer = audioBuffer;
+          // Explicitly set the gain to the pad's current volume setting
+          pad1.gainNode.gain.value = Tone.dbToGain(pad1.settings.volume);
+          console.log("Default sine wave loaded to Pad 1.");
+        }
+      }
+
+      /**
+       * Creates the HTML element for a drum pad and appends it to the container.
+       * @param {object} pad The pad object.
+       */
+      function createPadUI(pad) {
+        const padElement = document.createElement("div");
+        padElement.id = pad.id;
+        padElement.dataset.padId = pad.id; // Custom data attribute for easy lookup
+        padElement.className = `drum-pad bg-blue-200 hover:bg-blue-300 active:bg-blue-400 text-blue-800 font-bold py-8 px-4 rounded-2xl shadow-lg cursor-pointer flex items-center justify-center text-center transition duration-150 ease-in-out`;
+        padElement.textContent = `Pad ${pad.id.replace("pad", "")}`;
+
+        // Handle pad click (play sound and select pad) - for mouse
+        padElement.addEventListener("click", () => {
+          if (pad.player.buffer.loaded) {
+            //pad.player.start(); // Play the sample
+            animatePadPress(padElement); // Visual feedback
+          } else {
+            showToast(
+              `Pad ${pad.id.replace(
+                "pad",
+                ""
+              )} has no sample loaded. Please record or upload one.`
+            );
+          }
+          selectPad(pad.id); // Select this pad for FX rack
+        });
+
+        // Handle pad touch (play sound and select pad) - for touch devices
+        padElement.addEventListener("touchstart", (e) => {
+          e.preventDefault(); // Prevent duplicate mouse events on some devices
+          if (pad.player.buffer.loaded) {
+            pad.player.start(); // Play the sample
+            animatePadPress(padElement); // Visual feedback
+          } else {
+            showToast(
+              `Pad ${pad.id.replace(
+                "pad",
+                ""
+              )} has no sample loaded. Please record or upload one.`
+            );
+          }
+          selectPad(pad.id); // Select this pad for FX rack
+        });
+
+        // Handle drag over (for drag-and-drop sample assignment)
+        padElement.addEventListener("dragover", (e) => {
+          e.preventDefault(); // Allow drop
+          padElement.classList.add("border-indigo-500", "border-4");
+        });
+
+        // Handle drag leave
+        padElement.addEventListener("dragleave", (e) => {
+          padElement.classList.remove("border-indigo-500", "border-4");
+        });
+
+        // Handle drop (for drag-and-drop sample assignment)
+        padElement.addEventListener("drop", async (e) => {
+          e.preventDefault();
+          padElement.classList.remove("border-indigo-500", "border-4");
+          const file = e.dataTransfer.files[0];
+          if (file && file.type.startsWith("audio/")) {
+            try {
+              const arrayBuffer = await file.arrayBuffer();
+              const audioBuffer = await audioContext.decodeAudioData(
+                arrayBuffer
+              );
+              assignSampleToPad(pad.id, audioBuffer);
+              showToast(
+                `Sample "${file.name}" assigned to Pad ${pad.id.replace(
+                  "pad",
+                  ""
+                )}.`
+              );
+            } catch (error) {
+              console.error("Error loading audio file:", error);
+              showToast(
+                "Failed to load audio file. Please ensure it's a valid audio format."
+              );
+            }
+          } else {
+            showToast("Please drop a valid audio file.");
+          }
+        });
+
+        drumPadsContainer.appendChild(padElement);
+      }
+
+      /**
+       * Provides visual feedback when a pad is pressed.
+       * @param {HTMLElement} padElement The HTML element of the pad.
+       */
+      function animatePadPress(padElement) {
+        // Clear any existing timeout for this pad to prevent multiple animations
+        if (activePadAnimations.has(padElement.id)) {
+          clearTimeout(activePadAnimations.get(padElement.id));
+        }
+
+        padElement.classList.add("active"); // Add active class for immediate visual feedback
+
+        // Remove active class after a short delay
+        const timeoutId = setTimeout(() => {
+          padElement.classList.remove("active");
+          activePadAnimations.delete(padElement.id); // Remove from map after animation finishes
+        }, 150); // Adjust duration as needed
+
+        activePadAnimations.set(padElement.id, timeoutId); // Store timeout ID
+      }
+
+      /**
+       * Selects a drum pad and updates the FX rack UI.
+       * @param {string} id The ID of the pad to select.
+       */
+      function selectPad(id) {
+        // Deselect previous pad
+        if (selectedPadId) {
+          const prevPadElement = document.getElementById(selectedPadId);
+          if (prevPadElement) {
+            prevPadElement.classList.remove("selected");
+          }
+        }
+
+        // Select new pad
+        selectedPadId = id;
+        const currentPadElement = document.getElementById(selectedPadId);
+        if (currentPadElement) {
+          currentPadElement.classList.add("selected");
+          selectedPadNameSpan.textContent = `Pad ${id.replace("pad", "")}`;
+        }
+        updateFxRackUI(); // Update FX rack with selected pad's settings
+      }
+
+      /**
+       * Updates the FX rack UI with the settings of the currently selected pad.
+       */
+      function updateFxRackUI() {
+        const selectedPad = pads.find((p) => p.id === selectedPadId);
+
+        // Disable all controls if no pad is selected
+        document
+          .querySelectorAll("#fxRack input, #fxRack button")
+          .forEach((control) => {
+            control.disabled = !selectedPad;
+          });
+        padLoopToggle.disabled = !selectedPad;
+
+        if (!selectedPad) {
+          selectedPadNameSpan.textContent = "None";
+          // Reset display values to default/empty if no pad selected
+          padVolumeValueSpan.textContent = "0 dB";
+          padSpeedValueSpan.textContent = "1x";
+          padPitchValueSpan.textContent = "0 semitones";
+          reverbWetValueSpan.textContent = "0%";
+          delayWetValueSpan.textContent = "0%";
+          distortionWetValueSpan.textContent = "0%";
+          highPassFreqValueSpan.textContent = "20 Hz";
+          lowPassFreqValueSpan.textContent = "20000 Hz";
+          padLoopToggle.checked = false;
+          eqBassValueSpan.textContent = "0 dB";
+          eqMidValueSpan.textContent = "0 dB";
+          eqTrebleValueSpan.textContent = "0 dB";
+
+          padVolumeSlider.value = 0;
+          padSpeedSlider.value = 1;
+          padPitchSlider.value = 0;
+          reverbWetSlider.value = 0;
+          delayWetSlider.value = 0;
+          distortionWetSlider.value = 0;
+          highPassFreqSlider.value = 20;
+          lowPassFreqSlider.value = 20000;
+          eqBassSlider.value = 0;
+          eqMidSlider.value = 0;
+          eqTrebleSlider.value = 0;
+
+          playSinglePadBtn.disabled = true; // Disable play button if no pad selected
+          stopSinglePadBtn.disabled = true; // Disable stop button if no pad selected
+          return;
+        }
+
+        // Update sliders and spans with selected pad's settings
+        padVolumeSlider.value = selectedPad.settings.volume;
+        padVolumeValueSpan.textContent = `${selectedPad.settings.volume} dB`;
+
+        padSpeedSlider.value = selectedPad.settings.speed;
+        padSpeedValueSpan.textContent = `${selectedPad.settings.speed.toFixed(
+          2
+        )}x`;
+
+        padPitchSlider.value = selectedPad.settings.pitch;
+        padPitchValueSpan.textContent = `${selectedPad.settings.pitch} semitones`;
+
+        reverbWetSlider.value = selectedPad.settings.reverbWet;
+        reverbWetValueSpan.textContent = `${(
+          selectedPad.settings.reverbWet * 100
+        ).toFixed(0)}%`;
+
+        delayWetSlider.value = selectedPad.settings.delayWet;
+        delayWetValueSpan.textContent = `${(
+          selectedPad.settings.delayWet * 100
+        ).toFixed(0)}%`;
+
+        distortionWetSlider.value = selectedPad.settings.distortionWet;
+        distortionWetValueSpan.textContent = `${(
+          selectedPad.settings.distortionWet * 100
+        ).toFixed(0)}%`;
+
+        highPassFreqSlider.value = selectedPad.settings.highPassFreq;
+        highPassFreqValueSpan.textContent = `${selectedPad.settings.highPassFreq} Hz`;
+
+        lowPassFreqSlider.value = selectedPad.settings.lowPassFreq;
+        lowPassFreqValueSpan.textContent = `${selectedPad.settings.lowPassFreq} Hz`;
+
+        padLoopToggle.checked = selectedPad.loop;
+        selectedPad.player.loop = selectedPad.loop; // Ensure Tone.Player loop property is in sync
+
+        eqBassSlider.value = selectedPad.settings.eqBass;
+        eqBassValueSpan.textContent = `${selectedPad.settings.eqBass} dB`;
+        eqMidSlider.value = selectedPad.settings.eqMid;
+        eqMidValueSpan.textContent = `${selectedPad.settings.eqMid} dB`;
+        eqTrebleSlider.value = selectedPad.settings.eqTreble;
+        eqTrebleValueSpan.textContent = `${selectedPad.settings.eqTreble} dB`;
+
+        // Enable play button for the selected pad if a sample is loaded
+        playSinglePadBtn.disabled = !selectedPad.player.buffer.loaded;
+        stopSinglePadBtn.disabled = !selectedPad.player.loaded; // Enable stop along with play
+      }
+
+      /**
+       * Assigns an AudioBuffer to a specified pad's Tone.Player.
+       * @param {string} padId
+       * @param {AudioBuffer} audioBuffer
+       */
+      function assignSampleToPad(padId, audioBuffer) {
+        const pad = pads.find((p) => p.id === padId);
+        if (pad) {
+          pad.player.buffer.set(audioBuffer);
+          pad.waveformBuffer = audioBuffer; // Store for trimming
+
+          // Explicitly set the gain to the pad's current volume setting
+          // This ensures the volume is applied immediately when a sample is assigned,
+          // in case the pad wasn't currently selected and updateFxRackUI wouldn't run.
+          pad.gainNode.gain.value = Tone.dbToGain(pad.settings.volume);
+
+          playTrimmedSampleBtn.disabled = false; // Enable play button after a sample is assigned
+          stopTrimmedSampleBtn.disabled = true; // Initially disable stop for trimmed sample
+          showToast(`Sample loaded to ${padId}.`);
+          updateFxRackUI(); // Update FX rack buttons state
+        }
+      }
+
+      /**
+       * Sets up the master Tone.Recorder instance and the Tone.Analyser for visualization.
+       */
+      function setupMasterRecorder() {
+        masterRecorder = new Tone.Recorder();
+        // Connect the entire Tone.js output to the recorder
+        Tone.Destination.connect(masterRecorder);
+
+        // Initialize the analyser for EQ visualization
+        eqAnalyser = new Tone.Analyser("fft", 2048); // Using "fft" for frequency analysis
+        Tone.Destination.connect(eqAnalyser);
+      }
+
+      /**
+       * Initializes the Konva.js stage and layer for the waveform display.
+       */
+      function initWaveformKonva() {
+
+        waveformContainerWidth = waveformCanvasContainer.offsetWidth;
+        waveformContainerHeight = waveformCanvasContainer.offsetHeight;
+
+        waveformStage = new Konva.Stage({
+          container: "waveformCanvasContainer",
+          width: waveformContainerWidth,
+          height: waveformContainerHeight,
+        });
+        waveformLayer = new Konva.Layer();
+        waveformStage.add(waveformLayer);
+
+        // Initialize trim handles and highlight once
+        trimHighlightRect = new Konva.Rect({
+          x: 0,
+          y: 0,
+          width: waveformContainerWidth,
+          height: waveformContainerHeight,
+          fill: "rgba(100, 100, 255, 0.2)",
+          listening: false, // Not interactive
+        });
+        waveformLayer.add(trimHighlightRect);
+
+        trimStartRect = new Konva.Rect({
+          x: 0,
+          y: 0,
+          width: 0,
+          height: waveformContainerHeight,
+          fill: "#6366f1",
+          draggable: false, 
+          listening: false ,
+          cursor: "ew-resize",
+          dragBoundFunc: function (pos) {
+            // Restrict dragging within canvas bounds and and before trimEndRect
+            const endX = trimEndRect.x();
+            return {
+              x: Math.min(Math.max(0, pos.x), endX - this.width()),
+              y: this.absolutePosition().y,
+            };
+          },
+        });
+        waveformLayer.add(trimStartRect);
+
+        trimEndRect = new Konva.Rect({
+          x: waveformContainerWidth,
+          y: 0,
+          width: 0,
+          height: waveformContainerHeight,
+          fill: "#6366f1", // Indigo-500
+          draggable: false, 
+          listening: false ,
+          cursor: "ew-resize",
+          dragBoundFunc: function (pos) {
+            // Restrict dragging within canvas bounds and after trimStartRect
+            const startX = trimStartRect.x();
+            return {
+              x: Math.min(
+                Math.max(startX + trimStartRect.width(), pos.x),
+                waveformContainerWidth - this.width()
+              ),
+              y: this.absolutePosition().y,
+            };
+          },
+        });
+        waveformLayer.add(trimEndRect);
+
+        // Initial hide as no waveform is loaded
+        trimStartRect.visible(false);
+        trimEndRect.visible(false);
+        trimHighlightRect.visible(false);
+      }
+
+      /**
+       * Draws the waveform on the Konva.js canvas.
+       * @param {AudioBuffer} audioBuffer The audio buffer to visualize.
+       */
+      function drawWaveform(audioBuffer) {
+        // Remove previous waveform line if it exists
+        if (waveformLine) {
+          waveformLine.destroy();
+        }
+
+        const channelData = audioBuffer.getChannelData(0); // Get mono data
+        const samplesPerPixel = Math.max(
+          1,
+          Math.floor(channelData.length / waveformContainerWidth)
+        );
+        const points = [];
+
+        // Downsample audio data for visualization
+        for (let i = 0; i < waveformContainerWidth; i++) {
+          let sum = 0;
+          for (let j = 0; j < samplesPerPixel; j++) {
+            sum += Math.abs(channelData[i * samplesPerPixel + j]);
+          }
+          const avg = sum / samplesPerPixel;
+          const y =
+            waveformContainerHeight / 2 - (avg * waveformContainerHeight) / 2;
+          points.push(i, y);
+        }
+
+        waveformLine = new Konva.Line({
+          points: points,
+          stroke: "#3b82f6", // Tailwind blue-500
+          strokeWidth: 2,
+          tension: 0.5,
+          lineCap: "round",
+          lineJoin: "round",
+        });
+        waveformLayer.add(waveformLine);
+
+        // Ensure handles are visible and positioned correctly for a full sample
+        trimStartRect.x(0);
+        trimEndRect.x(waveformContainerWidth - trimEndRect.width());
+        trimStartRect.visible(true);
+        trimEndRect.visible(true);
+        trimHighlightRect.visible(true);
+
+        // Make sure trim handles are on top
+        trimStartRect.moveToTop();
+        trimEndRect.moveToTop();
+        trimHighlightRect.moveToBottom(); // Highlight should be behind the line and handles
+
+        // Update sliders and highlight
+        trimStartSlider.value = 0;
+        trimEndSlider.value = 100;
+        updateTrimHighlight();
+
+        waveformLayer.draw();
+        playTrimmedSampleBtn.disabled = false; // Enable play button
+      }
+
+      /**
+       * Updates the trim sliders' values based on the Konva handle positions.
+       */
+      function updateTrimSlidersFromHandles() {
+        const startPercent = (trimStartRect.x() / waveformContainerWidth) * 100;
+        const endPercent =
+          ((trimEndRect.x() + trimEndRect.width()) / waveformContainerWidth) *
+          100;
+
+        trimStartSlider.value = startPercent.toFixed(1);
+        trimEndSlider.value = endPercent.toFixed(1);
+
+        updateTrimHighlight();
+        updateTrimSliderDisplay();
+      }
+
+      /**
+       * Updates the visual highlight on the waveform based on trim slider values.
+       */
+      function updateTrimHighlight() {
+        // Ensure Konva objects are initialized before attempting to access their properties
+        if (!waveformStage || !trimStartRect || !trimEndRect || !trimHighlightRect) {
+            return;
+        }
+
+        const startX = (parseFloat(trimStartSlider.value) / 100) * waveformContainerWidth;
+        const endX = (parseFloat(trimEndSlider.value) / 100) * waveformContainerWidth;
+        trimHighlightRect.x(startX);
+        trimHighlightRect.width(endX - startX);
+        waveformLayer.draw();
+      }
+
+      /**
+       * Updates the text display for trim sliders.
+       */
+      function updateTrimSliderDisplay() {
+        trimStartValueSpan.textContent = `${trimStartSlider.value}%`;
+        trimEndValueSpan.textContent = `${trimEndSlider.value}%`;
+      }
+
+      /**
+       * Handles resizing of the waveform canvas container.
+       */
+      function resizeWaveformCanvas() {
+        // Only proceed if waveformStage is initialized
+        if (!waveformStage || !trimStartRect || !trimEndRect) return;
+
+        waveformContainerWidth = waveformCanvasContainer.offsetWidth;
+        waveformContainerHeight = waveformCanvasContainer.offsetHeight;
+        waveformStage.width(waveformContainerWidth);
+        waveformStage.height(waveformContainerHeight);
+
+        // Redraw waveform and handles if a sample is loaded
+        if (recordedAudioBuffer) {
+          drawWaveform(recordedAudioBuffer);
+          // Adjust handle positions based on new width while maintaining percentage
+          const startPercent = parseFloat(trimStartSlider.value);
+          const endPercent = parseFloat(trimEndSlider.value);
+          trimStartRect.x((startPercent / 100) * waveformContainerWidth);
+          trimEndRect.x(
+            (endPercent / 100) * waveformContainerWidth - trimEndRect.width()
+          );
+          updateTrimHighlight();
+        }
+        waveformLayer.draw();
+      }
+
+      // --- Timeline Sequencer (Konva.js) ---
+
+      /**
+       * Initializes the Konva.js stage and layer for the timeline.
+       */
+      function initTimelineKonva() {
+        // Initial dimensions for the Konva stage, will be updated by resize
+        const stageWidth = timelineTotalCellsX * timelineCellSize;
+        const stageHeight = timelineNumPads * timelineCellSize;
+
+        timelineStage = new Konva.Stage({
+          container: "timelineCanvasContainer",
+          width: stageWidth,
+          height: stageHeight,
+        });
+        timelineLayer = new Konva.Layer();
+        timelineStage.add(timelineLayer);
+
+        drawTimelineGrid();
+        renderTimelineEvents(); // Initial render of events
+
+        // Add click listener to timeline for adding events
+        timelineStage.on("click", (e) => {
+          // Only add if not clicking on an existing event rectangle
+          if (!e.target.hasName("timeline-event-rect")) {
+            const pos = timelineStage.getPointerPosition();
+            const cellX = Math.floor(pos.x / timelineCellSize);
+            const cellY = Math.floor(pos.y / timelineCellSize);
+
+            // Calculate Tone.js time format
+            const measure = Math.floor(cellX / timelineSubdivision);
+            const beat = Math.floor(
+              (cellX % timelineSubdivision) /
+                (timelineSubdivision / timelineBeatsPerMeasure)
+            );
+            const sixteen =
+              cellX % (timelineSubdivision / timelineBeatsPerMeasure);
+            const time = `${measure}:${beat}:${sixteen}`;
+            const padId = pads[cellY] ? pads[cellY].id : null;
+
+            if (padId) {
+              addTimelineEvent(padId, time);
+            }
+          }
+        });
+
+        // Double-click to remove events
+        timelineStage.on("dblclick", (e) => {
+          if (e.target.hasName("timeline-event-rect")) {
+            const eventId = e.target.id();
+            removeTimelineEvent(eventId);
+          }
+        });
+      }
+
+      /**
+       * Draws the static grid lines for the timeline.
+       */
+      function drawTimelineGrid() {
+        // Clear only grid lines and labels if re-drawing, not events
+        timelineLayer.find(".grid-line").forEach((node) => node.destroy());
+        timelineLayer.find(".grid-label").forEach((node) => node.destroy());
+
+        // Draw vertical lines
+        for (let i = 0; i <= timelineTotalCellsX; i++) {
+          const isMeasureStart = i % timelineSubdivision === 0;
+          const isBeatStart =
+            i % (timelineSubdivision / timelineBeatsPerMeasure) === 0;
+          timelineLayer.add(
+            new Konva.Line({
+              points: [
+                i * timelineCellSize,
+                0,
+                i * timelineCellSize,
+                timelineNumPads * timelineCellSize,
+              ],
+              stroke: isMeasureStart
+                ? "#9ca3af"
+                : isBeatStart
+                ? "#d1d5db"
+                : "#e5e7eb", // Darker for measure, lighter for beat, lightest for subdivisions
+              strokeWidth: isMeasureStart ? 2 : isBeatStart ? 1.5 : 1,
+              id: `grid-v-${i}`,
+              name: "grid-line", // Add a class name for easy selection
+            })
+          );
+        }
+
+        // Draw horizontal lines and pad labels
+        for (let i = 0; i <= timelineNumPads; i++) {
+          timelineLayer.add(
+            new Konva.Line({
+              points: [
+                0,
+                i * timelineCellSize,
+                timelineTotalCellsX * timelineCellSize,
+                i * timelineCellSize,
+              ],
+              stroke: "#d1d5db",
+              strokeWidth: 1,
+              id: `grid-h-${i}`,
+              name: "grid-line", // Add a class name for easy selection
+            })
+          );
+          if (i < timelineNumPads) {
+            timelineLayer.add(
+              new Konva.Text({
+                x: 5,
+                y: i * timelineCellSize + 5,
+                text: `Pad ${i + 1}`,
+                fontSize: 12,
+                fill: "#4b5563", // Tailwind gray-700
+                listening: false,
+                name: "grid-label", // Add a class name for easy selection
+              })
+            );
+          }
+        }
+        timelineLayer.draw();
+      }
+
+      /**
+       * Renders (or re-renders) all current timeline events on the Konva.js canvas.
+       */
+      function renderTimelineEvents() {
+        // Remove all existing event rectangles from the layer
+        timelineLayer
+          .find(".timeline-event-rect")
+          .forEach((node) => node.destroy());
+        timelineEventsKonva = []; // Clear the array of Konva objects
+
+        timelineEventsData.forEach((eventData) => {
+          const [measure, beat, sixteen] = eventData.time
+            .split(":")
+            .map(Number);
+          // Calculate initial X position based on Tone.js time format
+          const cellX =
+            measure * timelineSubdivision +
+            beat * (timelineSubdivision / timelineBeatsPerMeasure) +
+            sixteen;
+          const padIndex = pads.findIndex((p) => p.id === eventData.padId);
+
+          if (padIndex !== -1) {
+            const eventRect = new Konva.Rect({
+              x: cellX * timelineCellSize,
+              y: padIndex * timelineCellSize,
+              width: timelineCellSize,
+              height: timelineCellSize,
+              fill: "rgba(99, 102, 241, 0.7)", // Indigo-500 with transparency
+              stroke: "#6366f1",
+              strokeWidth: 1,
+              draggable: true,
+              cornerRadius: 5,
+              id: eventData.id, // Use the stored ID
+              name: "timeline-event-rect", // Name for group selection
+              data: eventData, // Store original data for retrieval
+            });
+
+            // Snap to grid during drag
+            eventRect.dragBoundFunc = function (pos) {
+              const newX = Math.round(pos.x / timelineCellSize) * timelineCellSize;
+              const newY = Math.round(pos.y / timelineCellSize) * timelineCellSize;
+
+              // Clamp to canvas bounds
+              const clampedX = Math.max(0, Math.min(newX, timelineStage.width() - this.width()));
+              const clampedY = Math.max(0, Math.min(newY, timelineStage.height() - this.height()));
+
+              return {
+                x: clampedX,
+                y: clampedY,
+              };
+            };
+
+
+            eventRect.on("dragend", function () {
+              const newPos = eventRect.position();
+              const newCellX = Math.round(newPos.x / timelineCellSize);
+              const newCellY = Math.round(newPos.y / timelineCellSize);
+
+              // Recalculate Tone.js time from snapped cell position
+              const newMeasure = Math.floor(newCellX / timelineSubdivision);
+              const newBeat = Math.floor(
+                (newCellX % timelineSubdivision) /
+                  (timelineSubdivision / timelineBeatsPerMeasure)
+              );
+              const newSixteen =
+                newCellX % (timelineSubdivision / timelineBeatsPerMeasure);
+              const newTime = `${newMeasure}:${newBeat}:${newSixteen}`;
+              const newPadId = pads[newCellY] ? pads[newCellY].id : null;
+
+              if (newPadId) {
+                // Update the original data object associated with this Konva rect
+                this.attrs.data.padId = newPadId;
+                this.attrs.data.time = newTime;
+
+                // Also update the entry in the main timelineEventsData array
+                const dataIndex = timelineEventsData.findIndex(
+                  (e) => e.id === this.id()
+                );
+                if (dataIndex !== -1) {
+                  timelineEventsData[dataIndex].padId = newPadId;
+                  timelineEventsData[dataIndex].time = newTime;
+                }
+
+                // Snap the Konva rect to the exact grid position
+                eventRect.x(newCellX * timelineCellSize);
+                eventRect.y(newCellY * timelineCellSize);
+                timelineLayer.draw();
+
+                scheduleAllEvents(); // Reschedule all Tone.js events after drag
+              } else {
+                // If dragged outside a valid pad row, revert to original position
+                showToast(
+                  "Cannot place event outside pad rows. Event reverted."
+                );
+                // Find original position based on the data attribute
+                const originalData = eventRect.attrs.data; // Use eventRect.attrs.data directly
+                const originalPadIndex = pads.findIndex(
+                  (p) => p.id === originalData.padId
+                );
+                const [origMeasure, origBeat, origSixteen] = originalData.time
+                  .split(":")
+                  .map(Number);
+                const origCellX =
+                  origMeasure * timelineSubdivision +
+                  origBeat * (timelineSubdivision / timelineBeatsPerMeasure) +
+                  origSixteen;
+
+                eventRect.x(origCellX * timelineCellSize);
+                eventRect.y(originalPadIndex * timelineCellSize);
+                timelineLayer.draw();
+              }
+            });
+
+            timelineLayer.add(eventRect);
+            timelineEventsKonva.push(eventRect);
+          }
+        });
+        timelineLayer.draw();
+      }
+
+      /**
+       * Adds a new event to the timeline and schedules it with Tone.js.
+       * @param {string} padId
+       * @param {string} time
+       */
+      function addTimelineEvent(padId, time) {
+        // Generate a unique ID for the event
+        const eventId = `timeline-event-${Date.now()}-${Math.random()
+          .toString(36)
+          .substring(2, 9)}`;
+        timelineEventsData.push({ padId, time, id: eventId });
+        renderTimelineEvents(); // Re-render all events to include the new one
+        scheduleAllEvents();
+      }
+
+      /**
+       * Removes a timeline event by its Konva ID.
+       * @param {string} eventId
+       */
+       function removeTimelineEvent(eventId) {
+            console.log(`Removing timeline event: ${eventId}`);
+            const index = timelineEventsData.findIndex((e) => e.id === eventId);
+            if (index !== -1) {
+                // Stop and dispose all currently active players
+                let playersToDispose = Array.from(activeTimelinePlayers);
+                playersToDispose.forEach(player => {
+                    try {
+                        if (player && typeof player.stop === 'function' && typeof player.dispose === 'function') {
+                            console.log("Removing event: Disposing player:", player);
+                            player.stop();
+                            player.dispose();
+                        }
+                    } catch (e) {
+                        console.error("Error during player disposal in removeTimelineEvent:", e);
+                    }
+                });
+                activeTimelinePlayers.clear();
+
+                // Remove the event from the data array
+                const removedEvent = timelineEventsData.splice(index, 1)[0];
+
+                // Stop and dispose players specifically tied to the removed event
+                Tone.Transport.cancel(removedEvent.time);
+
+                // Clear all existing schedules and re-render
+                Tone.Transport.clear();
+                renderTimelineEvents();
+                scheduleAllEvents(); // Reschedule only remaining events
+
+                console.log("Timeline event removed, active players:", activeTimelinePlayers.size);
+            }
+        }
+
+      /**
+       * Clears all events from the timeline.
+       */
+      function clearTimeline() {
+        console.log("Clear Timeline button clicked.");
+        timelineEventsData = [];
+        renderTimelineEvents(); // Clear all Konva event objects
+
+        // Dispose of any lingering players from previous schedules
+        let playersToDispose = Array.from(activeTimelinePlayers); // Create a static array to iterate
+        playersToDispose.forEach(player => {
+            try {
+                if (player && typeof player.stop === 'function' && typeof player.dispose === 'function') {
+                    console.log("Clear Timeline: Disposing player:", player);
+                    player.stop();
+                    player.dispose();
+                } else {
+                    console.warn("Clear Timeline: Invalid player object found during disposal:", player);
+                }
+            } catch (e) {
+                console.error("Error during player disposal in clearTimeline:", e);
+            }
+        });
+        activeTimelinePlayers.clear(); // Clear the set
+
+        scheduleAllEvents(); // This will now schedule an empty set of events
+        showToast("Timeline cleared.");
+        console.log("Clear Timeline: Active players after clear and reschedule:", activeTimelinePlayers.size);
+      }
+
+      /**
+       * Schedules all events from `timelineEventsData` with Tone.Transport.
+       * This function now creates a new Tone.Player for each scheduled event
+       * to ensure proper playback of repeated samples.
+       */
+      function scheduleAllEvents() {
+        console.log("--- START scheduleAllEvents ---");
+        Tone.Transport.clear(); // Clear all previously scheduled events
+        console.log("Tone.Transport cleared.");
+
+        // Dispose of any lingering players from previous schedules
+        console.log("Active Timeline Players before cleanup:", activeTimelinePlayers.size);
+        let playersToDispose = Array.from(activeTimelinePlayers); // Create a static array to iterate
+        playersToDispose.forEach(player => {
+            try {
+                if (player && typeof player.stop === 'function' && typeof player.dispose === 'function') {
+                    console.log("Disposing player:", player);
+                    player.stop();
+                    player.dispose();
+                } else {
+                    console.warn("Invalid player object found in activeTimelinePlayers during cleanup:", player);
+                }
+            } catch (e) {
+                console.error("Error during player disposal in scheduleAllEvents:", e);
+            }
+        });
+        activeTimelinePlayers.clear(); // Clear the set after disposing all
+        console.log("Active Timeline Players after cleanup:", activeTimelinePlayers.size);
+
+
+        timelineEventsData.forEach((eventData, index) => {
+          const pad = pads.find((p) => p.id === eventData.padId);
+          if (pad && pad.player.buffer.loaded) {
+            // Schedule the event with Tone.Transport
+            Tone.Transport.schedule((time) => {
+              // Create a new Tone.Player for each scheduled event
+              // This is crucial because a Tone.Player can only play its buffer once per instance.
+              // For sequencing discrete hits, we need a fresh "voice" for each trigger.
+              const tempPlayer = new Tone.Player({
+                url: pad.player.buffer, // Use the already loaded AudioBuffer
+                loop: pad.loop, // Inherit loop setting from the pad's settings
+                playbackRate: pad.settings.speed, // Inherit playback rate from the pad's settings
+                volume: pad.settings.volume // Inherit volume from pad settings
+              }).chain(
+                pad.fx.pitch,
+                pad.fx.distortion,
+                pad.fx.highPass,
+                pad.fx.lowPass,
+                pad.fx.delay,
+                pad.fx.reverb,
+                pad.fx.eq,
+                pad.gainNode,
+                Tone.Destination // Explicitly connect to Tone.Destination
+              );
+
+              // Start playback at the scheduled time
+              tempPlayer.start(time);
+              activeTimelinePlayers.add(tempPlayer); // Add to the set of active players
+              console.log(`Scheduled new player for ${eventData.padId} at ${eventData.time}. Total active: ${activeTimelinePlayers.size}`);
+
+              // Always dispose after playback to prevent memory leaks, removing from set
+              // This handles both one-shot and looping samples (if loop is externally stopped)
+              tempPlayer.onstop = () => {
+                  console.log(`Player for ${eventData.padId} at ${eventData.time} stopped (onstop callback).`);
+                  try {
+                      if (activeTimelinePlayers.has(tempPlayer)) { // Only dispose if still tracked
+                          tempPlayer.dispose();
+                          activeTimelinePlayers.delete(tempPlayer);
+                          console.log(`Player disposed and removed from set. Total active: ${activeTimelinePlayers.size}`);
+                      } else {
+                          console.log("Player already removed/disposed, skipping double-dispose in onstop.");
+                      }
+                  } catch (e) {
+                      console.error("Error during tempPlayer onstop disposal:", e);
+                  }
+              };
+
+            }, eventData.time);
+          }
+        });
+        console.log("--- END scheduleAllEvents ---");
+      }
+
+      /**
+       * Handles resizing of the timeline canvas container.
+       * Redraws the grid and re-positions events.
+       */
+      function resizeTimelineCanvas() {
+        // Only proceed if timelineStage is initialized
+        if (!timelineStage) return;
+
+        const newContainerWidth = timelineCanvasContainer.offsetWidth;
+        const newContainerHeight = timelineCanvasContainer.offsetHeight;
+
+        // The Konva stage should be large enough to contain all grid cells
+        timelineStage.width(timelineTotalCellsX * timelineCellSize);
+        timelineStage.height(timelineNumPads * timelineCellSize);
+
+        // Ensure the scrollable container's dimensions are correct
+        timelineCanvasContainer.style.width = `${newContainerWidth}px`;
+        timelineCanvasContainer.style.height = `${newContainerHeight}px`;
+
+        drawTimelineGrid(); // Redraw grid first
+        renderTimelineEvents(); // Re-render events on the new grid
+        timelineLayer.draw();
+      }
+
+      /**
+       * Initializes the canvas for the EQ visualizer.
+       */
+      function initEqVisualizer() {
+        eqVisualizerCanvas = document.getElementById("eqVisualizerCanvas");
+        eqVisualizerCtx = eqVisualizerCanvas.getContext("2d");
+        resizeEqVisualizer(); // Set initial size
+        animateEqVisualizer(); // Start animation loop
+      }
+
+      /**
+       * Animation loop for the EQ visualizer.
+       * This uses Tone.Analyser to visualize real-time frequency energy.
+       */
+      function animateEqVisualizer() {
+        eqVisualizerAnimationFrameId =
+          requestAnimationFrame(animateEqVisualizer);
+
+        const width = eqVisualizerCanvas.width;
+        const height = eqVisualizerCanvas.height;
+        eqVisualizerCtx.clearRect(0, 0, width, height); // Clear canvas
+
+        if (!eqAnalyser) {
+          eqVisualizerCtx.font = "14px Inter";
+          eqVisualizerCtx.fillStyle = "#6b7280"; // gray-500
+          eqVisualizerCtx.textAlign = "center";
+          eqVisualizerCtx.fillText(
+            "Audio context not initialized.",
+            width / 2,
+            height / 2
+          );
+          return;
+        }
+
+        const fft = eqAnalyser.getValue(); // Get the FFT data (array of dB values)
+
+        // Define frequency ranges for bass, mid, treble based on standard audio ranges
+        // Tone.Analyser.context.sampleRate is the overall sample rate of the audio context
+        // fft.length corresponds to half of the FFT size (e.g., 2048 samples for FFT size 4096)
+        // The frequency resolution (bin size) is sampleRate / fftSize
+        // So, max_freq_represented = sampleRate / 2
+        const sampleRate = Tone.context.sampleRate;
+        const binSize = (sampleRate / 2) / fft.length;
+
+        // Approximate ranges in Hz
+        const BASS_FREQ_END = 250;
+        const MID_FREQ_START = 250;
+        const MID_FREQ_END = 4000;
+        const TREBLE_FREQ_START = 4000;
+        const TREBLE_FREQ_END = 20000; // Max human hearing
+
+        // Calculate bin indices for each range
+        const bassEndBin = Math.min(fft.length, Math.floor(BASS_FREQ_END / binSize));
+        const midStartBin = Math.floor(MID_FREQ_START / binSize);
+        const midEndBin = Math.min(fft.length, Math.floor(MID_FREQ_END / binSize));
+        const trebleStartBin = Math.floor(TREBLE_FREQ_START / binSize);
+        const trebleEndBin = Math.min(fft.length, Math.floor(TREBLE_FREQ_END / binSize));
+
+        let bassEnergy = 0;
+        let midEnergy = 0;
+        let trebleEnergy = 0;
+        let bassCount = 0;
+        let midCount = 0;
+        let trebleCount = 0;
+
+        // Sum energies for each band
+        for (let i = 0; i < fft.length; i++) {
+          // Normalize the FFT value (typically -100 to 0 dB) to a 0-1 scale
+          // Adding 100 to shift to positive, dividing by 100 to scale
+          const normalizedValue = (fft[i] + 100) / 100;
+
+          if (i < bassEndBin) {
+            bassEnergy += normalizedValue;
+            bassCount++;
+          } else if (i >= midStartBin && i < midEndBin) {
+            midEnergy += normalizedValue;
+            midCount++;
+          } else if (i >= trebleStartBin && i < trebleEndBin) {
+            trebleEnergy += normalizedValue;
+            trebleCount++;
+          }
+        }
+
+        // Calculate average energy for each band, defaulting to 0 if no bins in range
+        const bassAvg = bassCount > 0 ? bassEnergy / bassCount : 0;
+        const midAvg = midCount > 0 ? midEnergy / midCount : 0;
+        const trebleAvg = trebleCount > 0 ? trebleEnergy / trebleCount : 0;
+
+        const barWidth = width / 3 - 10; // 3 bars with some spacing
+        const spacing = 5;
+
+        // Function to draw a bar
+        const drawBar = (x, avgEnergy, label, color) => {
+          // Scale average energy (0-1) to full canvas height
+          const barHeight = avgEnergy * height;
+          eqVisualizerCtx.fillStyle = color;
+          eqVisualizerCtx.fillRect(x, height - barHeight, barWidth, barHeight);
+        };
+
+        // Draw Bass Bar
+        drawBar(spacing, bassAvg, "Bass", "#ef4444"); // Red-500
+
+        // Draw Mid Bar
+        drawBar(spacing * 2 + barWidth, midAvg, "Mid", "#f97316"); // Orange-500
+
+        // Draw Treble Bar
+        drawBar(spacing * 3 + barWidth * 2, trebleAvg, "Treble", "#22c55e"); // Green-500
+      }
+
+      /**
+       * Handles resizing of the EQ visualizer canvas.
+       */
+      function resizeEqVisualizer() {
+        // Only proceed if eqVisualizerCanvas is initialized
+        if (!eqVisualizerCanvas) return;
+
+        eqVisualizerCanvas.width = eqVisualizerContainer.offsetWidth;
+        eqVisualizerCanvas.height = eqVisualizerContainer.offsetHeight;
+      }
+
+      // --- Event Listeners ---
+
+      // Add resize listeners for canvases
+      window.addEventListener("resize", () => {
+        resizeWaveformCanvas();
+        resizeTimelineCanvas();
+        resizeEqVisualizer();
+      });
+
+      // Global Controls Listeners
+      bpmSlider.addEventListener("input", () => {
+        Tone.Transport.bpm.value = bpmSlider.value;
+        bpmValueSpan.textContent = bpmSlider.value;
+      });
+
+      masterVolumeSlider.addEventListener("input", () => {
+        Tone.Destination.volume.value = masterVolumeSlider.value;
+        masterVolumeValueSpan.textContent = `${masterVolumeSlider.value} dB`;
+      });
+
+      playBtn.addEventListener("click", async () => {
+            try {
+                    if (Tone.Transport.state !== "started" && timelineEventsData.length !== 0) {
+                        await Tone.start();
+                        Tone.Transport.start();
+                        playBtn.textContent = "Playing...";
+
+                        let maxTimeSeconds = 0;
+                        timelineEventsData.forEach(event => {
+                            const eventTime = Tone.Time(event.time).toSeconds();
+                            if (eventTime > maxTimeSeconds) maxTimeSeconds = eventTime;
+                        });
+
+                        const padding = 1;
+                        Tone.Transport.scheduleOnce(() => {
+                            handleTransportStop(); // ✅ Reuse stop logic
+                        }, maxTimeSeconds + padding);
+                    }else{
+                        showToast("No events to play. Please add events to the timeline.");
+                    }
+            } catch (error) {
+                console.error("Failed to start Tone.Transport:", error);
+                showToast("Failed to start playback. Check console for details.");
+            }
+            });
+
+
+    stopBtn.addEventListener("click", handleTransportStop);
+
+      function handleTransportStop() {
+            console.log("Transport stopping...");
+            Tone.Transport.stop();
+            Tone.Transport.position = 0;
+            playBtn.textContent = "Play";
+
+            pads.forEach((pad) => {
+                pad.player.stop();
+            });
+
+            let playersToDispose = Array.from(activeTimelinePlayers);
+            playersToDispose.forEach(player => {
+                try {
+                if (player && typeof player.stop === 'function' && typeof player.dispose === 'function') {
+                    console.log("Disposing player:", player);
+                    player.stop();
+                    player.dispose();
+                } else {
+                    console.warn("Invalid player object:", player);
+                }
+                } catch (e) {
+                console.error("Error during player disposal:", e);
+                }
+            });
+
+            activeTimelinePlayers.clear();
+            console.log("Transport stop complete. Active players:", activeTimelinePlayers.size);
+        }
+
+
+      recordBtn.addEventListener("click", async () => {
+        if (Tone.Transport.state !== "started") {
+          showToast("Start playback first to record the sequence.");
+          return;
+        }
+        if (recordBtn.textContent === "Record") {
+          recordBtn.textContent = "Recording...";
+          recordBtn.classList.add("bg-red-500", "animate-pulse");
+          downloadRecordingLink.classList.add("hidden");
+          try {
+            await masterRecorder.start(); // Start master recorder
+          } catch (error) {
+            console.error("Error starting master recorder:", error);
+            showToast(
+              "Failed to start recording. Please check console for details."
+            );
+            recordBtn.textContent = "Record";
+            recordBtn.classList.remove("bg-red-500", "animate-pulse");
+          }
+        } else {
+          recordBtn.textContent = "Processing...";
+          recordBtn.classList.remove("bg-red-500", "animate-pulse");
+          try {
+            const recordingBlob = await masterRecorder.stop(); // Stop and get recording blob
+            const url = URL.createObjectURL(recordingBlob);
+            downloadRecordingLink.href = url;
+            downloadRecordingLink.classList.remove("hidden");
+            recordBtn.textContent = "Record";
+            showToast(
+              "Recording finished! Click 'Download Recording' to save."
+            );
+          } catch (error) {
+            console.error("Error stopping master recorder:", error);
+            showToast(
+              "Failed to stop recording. Recording may have been too short or an error occurred."
+            );
+            recordBtn.textContent = "Record";
+          }
+        }
+      });
+
+      // FX Rack Control Listeners
+      padVolumeSlider.addEventListener("input", () => {
+        if (selectedPadId) {
+          const pad = pads.find((p) => p.id === selectedPadId);
+          pad.settings.volume = parseFloat(padVolumeSlider.value);
+          pad.gainNode.gain.value = Tone.dbToGain(pad.settings.volume);
+          padVolumeValueSpan.textContent = `${pad.settings.volume} dB`;
+        }
+      });
+
+      padSpeedSlider.addEventListener("input", () => {
+        if (selectedPadId) {
+          const pad = pads.find((p) => p.id === selectedPadId);
+          pad.settings.speed = parseFloat(padSpeedSlider.value);
+          pad.player.playbackRate.value = pad.settings.speed;
+          padSpeedValueSpan.textContent = `${pad.settings.speed.toFixed(2)}x`;
+        }
+      });
+
+      padPitchSlider.addEventListener("input", () => {
+        if (selectedPadId) {
+          const pad = pads.find((p) => p.id === selectedPadId);
+          pad.settings.pitch = parseFloat(padPitchSlider.value);
+          pad.fx.pitch.pitch = pad.settings.pitch;
+          padPitchValueSpan.textContent = `${pad.settings.pitch} semitones`;
+        }
+      });
+
+      reverbWetSlider.addEventListener("input", () => {
+        if (selectedPadId) {
+          const pad = pads.find((p) => p.id === selectedPadId);
+          pad.settings.reverbWet = parseFloat(reverbWetSlider.value);
+          pad.fx.reverb.wet.value = pad.settings.reverbWet;
+          reverbWetValueSpan.textContent = `${(
+            pad.settings.reverbWet * 100
+          ).toFixed(0)}%`;
+        }
+      });
+
+      delayWetSlider.addEventListener("input", () => {
+        if (selectedPadId) {
+          const pad = pads.find((p) => p.id === selectedPadId);
+          pad.settings.delayWet = parseFloat(delayWetSlider.value);
+          pad.fx.delay.wet.value = pad.settings.delayWet;
+          delayWetValueSpan.textContent = `${(
+            pad.settings.delayWet * 100
+          ).toFixed(0)}%`;
+        }
+      });
+
+      distortionWetSlider.addEventListener("input", () => {
+        if (selectedPadId) {
+          const pad = pads.find((p) => p.id === selectedPadId);
+          pad.settings.distortionWet = parseFloat(distortionWetSlider.value);
+          pad.fx.distortion.wet.value = pad.settings.distortionWet;
+          distortionWetValueSpan.textContent = `${(
+            pad.settings.distortionWet * 100
+          ).toFixed(0)}%`;
+        }
+      });
+
+      highPassFreqSlider.addEventListener("input", () => {
+        if (selectedPadId) {
+          const pad = pads.find((p) => p.id === selectedPadId);
+          pad.settings.highPassFreq = parseFloat(highPassFreqSlider.value);
+          pad.fx.highPass.frequency.value = pad.settings.highPassFreq;
+          highPassFreqValueSpan.textContent = `${pad.settings.highPassFreq} Hz`;
+        }
+      });
+
+      lowPassFreqSlider.addEventListener("input", () => {
+        if (selectedPadId) {
+          const pad = pads.find((p) => p.id === selectedPadId);
+          pad.settings.lowPassFreq = parseFloat(lowPassFreqSlider.value);
+          pad.fx.lowPass.frequency.value = pad.settings.lowPassFreq;
+          lowPassFreqValueSpan.textContent = `${pad.settings.lowPassFreq} Hz`;
+        }
+      });
+
+      padLoopToggle.addEventListener("change", () => {
+        if (selectedPadId) {
+          const pad = pads.find((p) => p.id === selectedPadId);
+          pad.loop = padLoopToggle.checked;
+          pad.player.loop = pad.loop;
+          // When toggling loop, immediately stop and restart if currently playing
+          if (pad.player.state === "started") {
+             pad.player.stop();
+             pad.player.start();
+          }
+        }
+      });
+
+      eqBassSlider.addEventListener("input", () => {
+        if (selectedPadId) {
+          const pad = pads.find((p) => p.id === selectedPadId);
+          pad.settings.eqBass = parseFloat(eqBassSlider.value);
+          pad.fx.eq.low.value = pad.settings.eqBass;
+          eqBassValueSpan.textContent = `${pad.settings.eqBass} dB`;
+        }
+      });
+      eqMidSlider.addEventListener("input", () => {
+        if (selectedPadId) {
+          const pad = pads.find((p) => p.id === selectedPadId);
+          pad.settings.eqMid = parseFloat(eqMidSlider.value);
+          pad.fx.eq.mid.value = pad.settings.eqMid;
+          eqMidValueSpan.textContent = `${pad.settings.eqMid} dB`;
+        }
+      });
+      eqTrebleSlider.addEventListener("input", () => {
+        if (selectedPadId) {
+          const pad = pads.find((p) => p.id === selectedPadId);
+          pad.settings.eqTreble = parseFloat(eqTrebleSlider.value);
+          pad.fx.eq.high.value = pad.settings.eqTreble;
+          eqTrebleValueSpan.textContent = `${pad.settings.eqTreble} dB`;
+        }
+      });
+
+      // New FX Rack button listeners
+      playSinglePadBtn.addEventListener("click", async () => {
+        if (selectedPadId) {
+          const pad = pads.find((p) => p.id === selectedPadId);
+          if (pad && pad.player.buffer.loaded) {
+            await Tone.start(); // Ensure audio context is running
+            pad.player.stop(); // Stop any previous playback on this player
+            pad.player.start(); // Start playback
+            animatePadPress(document.getElementById(pad.id)); // Visual feedback
+            playSinglePadBtn.disabled = false; // Disable play button
+            stopSinglePadBtn.disabled = false; // Enable stop button
+          } else {
+            showToast("No sample loaded for the selected pad.");
+          }
+        }
+      });
+
+      stopSinglePadBtn.addEventListener("click", () => {
+        if (selectedPadId) {
+          const pad = pads.find((p) => p.id === selectedPadId);
+          if (pad) {
+            pad.player.stop(); // Stop playback
+            playSinglePadBtn.disabled = false; // Enable play button
+            stopSinglePadBtn.disabled = true; // Disable stop button
+          }
+        }
+      });
+
+      // Sample Recorder & Trimmer Listeners
+      recordMicBtn.addEventListener("click", async () => {
+        if (!selectedPadId) {
+          showToast("Please select a drum pad first to record to.");
+          return;
+        }
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({
+            audio: true,
+          });
+          micRecorder = new MediaRecorder(stream);
+          const audioChunks = [];
+
+          micRecorder.ondataavailable = (e) => {
+            audioChunks.push(e.data);
+          };
+
+          micRecorder.onstop = async () => {
+            const audioBlob = new Blob(audioChunks, {
+              type: micRecorder.mimeType,
+            });
+            const arrayBuffer = await audioBlob.arrayBuffer();
+            recordedAudioBuffer = await audioContext.decodeAudioData(
+              arrayBuffer
+            );
+            drawWaveform(recordedAudioBuffer);
+            stopMicRecordBtn.disabled = true;
+            recordMicBtn.disabled = false;
+            trimWaveformBtn.disabled = false;
+            recordMicBtn.textContent = "Record Mic";
+            showToast(
+              "Microphone recording finished. Trim and assign to pad."
+            );
+            playTrimmedSampleBtn.disabled = false; // Enable play trimmed after recording
+          };
+
+          micRecorder.start();
+          recordMicBtn.textContent = "Recording...";
+          recordMicBtn.disabled = true;
+          stopMicRecordBtn.disabled = false;
+          playTrimmedSampleBtn.disabled = true; // Disable play trimmed during recording
+          stopTrimmedSampleBtn.disabled = true; // Disable stop trimmed during recording
+          showToast(
+            "Recording from microphone... Click 'Stop Recording' when done."
+          );
+        } catch (error) {
+          console.error("Error accessing microphone:", error);
+          showToast(
+            "Failed to access microphone. Please check permissions."
+          );
+        }
+      });
+
+      stopMicRecordBtn.addEventListener("click", () => {
+        if (micRecorder && micRecorder.state !== "inactive") {
+          micRecorder.stop();
+        }
+      });
+
+      uploadSampleBtn.addEventListener("click", () => {
+        if (!selectedPadId) {
+          showToast("Please select a drum pad first to upload to.");
+          return;
+        }
+        sampleUploadInput.click();
+      });
+
+      sampleUploadInput.addEventListener("change", async (e) => {
+        const file = e.target.files[0];
+        if (file) {
+          try {
+            const arrayBuffer = await file.arrayBuffer();
+            recordedAudioBuffer = await audioContext.decodeAudioData(
+              arrayBuffer
+            );
+            trimmedBuffer = null;
+            drawWaveform(recordedAudioBuffer);
+            showToast("Sample uploaded. Trim and assign to pad.");
+            playTrimmedSampleBtn.disabled = false; 
+            trimWaveformBtn.disabled = false;
+          } catch (error) {
+            console.error("Error loading audio file:", error);
+            showToast(
+              "Failed to load audio file. Please ensure it's a valid audio format."
+            );
+            playTrimmedSampleBtn.disabled = true;
+            stopTrimmedSampleBtn.disabled = true;
+            trimWaveformBtn.disabled = true;
+          }
+        }
+      });
+
+      playTrimmedSampleBtn.addEventListener("click", async () => {
+        if (!recordedAudioBuffer) {
+          showToast(
+            "No sample available to play. Please record or upload one first."
+          );
+          return;
+        }
+
+        // Ensure AudioContext is started
+        await Tone.start();
+
+        // If a previous trimmed player exists, stop and dispose it
+        if (currentTrimmedSamplePlayer) {
+            currentTrimmedSamplePlayer.stop();
+            currentTrimmedSamplePlayer.dispose();
+        }
+
+        // --- NEW LOGIC: Perform trimming on-the-fly for preview ---
+        const startPercent = parseFloat(trimStartSlider.value) / 100;
+        const endPercent = parseFloat(trimEndSlider.value) / 100;
+
+        if (startPercent >= endPercent) {
+          showToast(
+            "Trim start cannot be greater than or equal to trim end."
+          );
+          // Don't disable play/enable stop here, as it's an invalid state, not a playing state.
+          return;
+        }
+
+        const startTime = recordedAudioBuffer.duration * startPercent;
+        const endTime = recordedAudioBuffer.duration * endPercent;
+        const duration = endTime - startTime;
+
+        const numChannels = recordedAudioBuffer.numberOfChannels;
+        const sampleRate = recordedAudioBuffer.sampleRate;
+        const frameCount = Math.floor(duration * sampleRate);
+
+        const tempTrimmedBuffer = audioContext.createBuffer(
+          numChannels,
+          frameCount,
+          sampleRate
+        );
+
+        for (let channel = 0; channel < numChannels; channel++) {
+          const sourceData = recordedAudioBuffer.getChannelData(channel);
+          const targetData = tempTrimmedBuffer.getChannelData(channel);
+          const startIndex = Math.floor(startTime * sampleRate);
+
+          for (let i = 0; i < frameCount; i++) {
+            targetData[i] = sourceData[startIndex + i];
+          }
+        }
+        // --- END NEW LOGIC ---
+
+        // Create a temporary player for the newly trimmed buffer
+        currentTrimmedSamplePlayer = new Tone.Player({
+          url: tempTrimmedBuffer, // Use the dynamically created trimmed buffer
+          autostart: false,
+          loop: false, // Trimmed sample preview usually doesn't loop
+        }).toDestination(); // Connect directly to destination for preview
+
+        // Clean up after playback ends (for non-looping samples)
+        currentTrimmedSamplePlayer.onstop = () => {
+            currentTrimmedSamplePlayer.dispose();
+            currentTrimmedSamplePlayer = null;
+            playTrimmedSampleBtn.disabled = false;
+            stopTrimmedSampleBtn.disabled = true;
+        };
+
+        // Start the playback
+        currentTrimmedSamplePlayer.start();
+        playTrimmedSampleBtn.disabled = true; // Disable play button while playing
+        stopTrimmedSampleBtn.disabled = false; // Enable stop button
+      });
+
+      stopTrimmedSampleBtn.addEventListener("click", () => {
+        if (currentTrimmedSamplePlayer) {
+          currentTrimmedSamplePlayer.stop();
+          currentTrimmedSamplePlayer.dispose();
+          currentTrimmedSamplePlayer = null;
+          playTrimmedSampleBtn.disabled = false; // Enable play button
+          stopTrimmedSampleBtn.disabled = true; // Disable stop button
+        }
+      });
+
+      trimStartSlider.addEventListener("input", () => {
+        updateTrimHighlight();
+        updateTrimSliderDisplay();
+      });
+
+      trimEndSlider.addEventListener("input", () => {
+        updateTrimHighlight();
+        updateTrimSliderDisplay();
+      });
+
+        trimWaveformBtn.addEventListener("click", () => {
+            if (!recordedAudioBuffer) {
+                showToast(
+                    "No sample loaded to trim. Record or upload one first."
+                );
+                return;
+            }
+            
+            if (!selectedPadId) {
+                showToast(
+                    "Please select a pad to assign the trimmed sample to."
+                );
+                return;
+            }
+            
+            trimmedBuffer = null;
+            const startPercent = parseFloat(trimStartSlider.value) / 100;
+            const endPercent = parseFloat(trimEndSlider.value) / 100;
+
+            if (startPercent >= endPercent) {
+                showToast(
+                "Trim start cannot be greater than or equal to trim end."
+                );
+                return;
+            }
+
+            const startTime = recordedAudioBuffer.duration * startPercent;
+            const endTime = recordedAudioBuffer.duration * endPercent;
+            const duration = endTime - startTime;
+
+            // Create a new AudioBuffer for the trimmed section
+            const numChannels = recordedAudioBuffer.numberOfChannels;
+            const sampleRate = recordedAudioBuffer.sampleRate;
+            const frameCount = Math.floor(duration * sampleRate);
+
+            trimmedBuffer = audioContext.createBuffer(
+                numChannels,
+                frameCount,
+                sampleRate
+            );
+
+            for (let channel = 0; channel < numChannels; channel++) {
+                const sourceData = recordedAudioBuffer.getChannelData(channel);
+                const targetData = trimmedBuffer.getChannelData(channel);
+                const startIndex = Math.floor(startTime * sampleRate);
+
+                for (let i = 0; i < frameCount; i++) {
+                targetData[i] = sourceData[startIndex + i];
+                }
+            }
+
+            // Update the waveform canvas to show only the trimmed section
+            recordedAudioBuffer = trimmedBuffer;
+            drawWaveform(recordedAudioBuffer);
+            showToast("Sample trimmed. You can now assign it to a pad.");
+        });
+
+        assignSampleToPadBtn.addEventListener("click", () => {
+            if (!recordedAudioBuffer) {
+                showToast(
+                "No trimmed sample available. Please trim a sample first."
+                );
+                return;
+            }
+            if (!selectedPadId) {
+                showToast(
+                "Please select a pad to assign the trimmed sample to."
+                );
+                return;
+            }
+            assignSampleToPad(selectedPadId, recordedAudioBuffer);
+            showToast(
+                `Trimmed sample assigned to Pad ${selectedPadId.replace("pad", "")}.`
+            );
+        });
+        const resizeObserver = new ResizeObserver(() => {
+        if (waveformStage) {
+            waveformContainerWidth = waveformCanvasContainer.offsetWidth;
+            waveformContainerHeight = waveformCanvasContainer.offsetHeight;
+            waveformStage.width(waveformContainerWidth);
+            waveformStage.height(waveformContainerHeight);
+            trimHighlightRect.width(waveformContainerWidth);
+            trimHighlightRect.height(waveformContainerHeight);
+            trimEndRect.x(waveformContainerWidth);
+            waveformLayer.draw();
+        }
+        });
+        resizeObserver.observe(waveformCanvasContainer);
+    </script>
+  </body>
+</html>
