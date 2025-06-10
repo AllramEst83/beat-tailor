@@ -1695,7 +1695,7 @@
             });
 
             // Snap to grid during drag
-            eventRect.dragBoundFunc = function (pos) {
+            dragBoundFunc: (pos) => {
               const newX =
                 Math.round(pos.x / timelineCellSize) * timelineCellSize;
               const newY =
