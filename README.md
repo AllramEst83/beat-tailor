@@ -1,36 +1,34 @@
 # BeatTailor
 
-A web-based audio recording and playback tool built with Tone.js. Features include:
+BeatTailor is a web-based audio tool for recording, playback, and waveform visualization, powered by [Tone.js](https://tonejs.github.io/). It offers a modern, mobile-friendly interface for working with audio directly in your browser.
 
-- Microphone and speaker device selection
-- Live waveform visualization
-- Audio recording, playback, and trimming
-- Upload and playback of audio files
-- Responsive, mobile-friendly UI
+## Features
+
+- **Device Selection:** Choose your preferred microphone and speaker from dropdown menus.
+- **Live Waveform Visualization:** See real-time audio waveforms while recording or playing back.
+- **Audio Recording & Playback:** Record audio, play it back, trim, and reset as needed.
+- **Audio File Upload:** Import audio files for playback and trimming.
+- **Responsive UI:** Works seamlessly on both desktop and mobile devices.
 
 ## Getting Started
 
-1. **Install dependencies** (if any):
+1. **No Build Step Required:**  
+   Simply open `index.html` in your browser. No installation or build process is needed.
 
-   - This project is pure HTML/JS and does not require a build step.
-   - If you use localstorageService.js, ensure it is present in the `services/` folder.
+2. **Microphone Access:**  
+   Allow microphone permissions when prompted for full functionality.
 
-2. **Run locally:**
+## Usage
 
-   - Open `index.html` in your browser.
-   - Allow microphone access when prompted.
-
-3. **Features:**
-   - Select input/output devices from dropdowns.
-   - Record audio, trim, play, and reset.
-   - Upload audio files for playback and trimming.
-   - Visualize live and recorded waveforms.
+- Select input/output devices from the dropdowns.
+- Record, play, trim, or reset your audio.
+- Upload audio files for further editing.
+- Visualize both live and recorded waveforms.
 
 ## Notes
 
-- Uses [Tone.js](https://tonejs.github.io/) for audio processing.
-- Device selection uses the Web Audio API and may require HTTPS and user permissions.
-- Some features (like output device selection) may not be supported in all browsers.
+- Output device selection may not be supported in all browsers.
+- Device selection and audio features require HTTPS and user permissions.
 
 ## License
 

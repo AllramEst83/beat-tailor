@@ -1,0 +1,1162 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Beat Tailor</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="./css/style.css" />
+  </head>
+  <body>
+    <header class="sticky-header flex items-center justify-between">
+      <div class="ml-8 font-bold text-2xl text-pink-300">Beat Tailor</div>
+      <div class="relative mr-8">
+        <button
+          id="headerMenuButton"
+          class="header-icon-btn flex items-center justify-center rounded-full bg-pink-300 hover:bg-pink-400 transition-colors w-12 h-12 shadow-lg focus:outline-none"
+        >
+          <!-- Record SVG Icon -->
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="w-7 h-7 text-gray-800"
+            fill="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <circle cx="12" cy="12" r="8" />
+          </svg>
+        </button>
+        <!-- Dropdown menu (hidden by default, shown on click with JS) -->
+        <div
+          id="headerMenuDropdown"
+          class="header-menu-dropdown absolute right-0 mt-2 w-44 bg-white rounded-lg shadow-xl border border-gray-200 py-2 z-50 hidden"
+        >
+          <button
+            class="header-menu-item flex items-center gap-2 px-4 py-2 w-full hover:bg-pink-100 transition-colors rounded-t-lg"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="w-5 h-5 text-red-500"
+              fill="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <circle cx="12" cy="12" r="7" />
+            </svg>
+            Record
+          </button>
+          <button
+            class="header-menu-item flex items-center gap-2 px-4 py-2 w-full hover:bg-pink-100 transition-colors"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="w-5 h-5 text-gray-700"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              viewBox="0 0 24 24"
+            >
+              <rect
+                x="6"
+                y="6"
+                width="12"
+                height="12"
+                rx="2"
+                fill="currentColor"
+              />
+            </svg>
+            Stop Recording
+          </button>
+          <button
+            class="header-menu-item flex items-center gap-2 px-4 py-2 w-full hover:bg-pink-100 transition-colors"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="w-5 h-5 text-green-500"
+              fill="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <polygon points="8,5 19,12 8,19" />
+            </svg>
+            Play
+          </button>
+          <button
+            class="header-menu-item flex items-center gap-2 px-4 py-2 w-full hover:bg-pink-100 transition-colors rounded-b-lg"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="w-5 h-5 text-gray-700"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              viewBox="0 0 24 24"
+            >
+              <rect
+                x="6"
+                y="6"
+                width="12"
+                height="12"
+                rx="2"
+                fill="currentColor"
+              />
+            </svg>
+            Stop
+          </button>
+        </div>
+      </div>
+    </header>
+    <div class="rack-container flex flex-col items-center justify-center gap-8">
+      <div
+        class="rack-panel flex flex-col items-center justify-center gap-6 w-full"
+      >
+        <div class="device-selector-group w-full flex flex-col items-center">
+          <label for="audioInputDevices" class="mb-2 text-center"
+            >Select Microphone:</label
+          >
+          <select id="audioInputDevices" class="w-full max-w-xs"></select>
+        </div>
+
+        <div
+          class="control-group w-full flex flex-row flex-wrap items-center justify-center gap-4"
+        >
+          <button id="recordButton" class="rack-button">Record</button>
+          <label
+            for="uploadAudio"
+            class="rack-button cursor-pointer flex items-center justify-center"
+          >
+            Upload Audio
+            <input
+              type="file"
+              id="uploadAudio"
+              accept="audio/*"
+              class="hidden"
+            />
+          </label>
+          <button id="resetButton" class="rack-button">Reset</button>
+        </div>
+
+        <h2 class="canvas-label text-center w-full">Live Microphone Input</h2>
+        <canvas id="liveWaveformCanvas" class="w-full"></canvas>
+      </div>
+
+      <div
+        class="rack-panel canvases flex flex-col items-center justify-center gap-6 w-full"
+      >
+        <div class="device-selector-group w-full flex flex-col items-center">
+          <label for="audioOutputDevices" class="mb-2 text-center"
+            >Select Speaker:</label
+          >
+          <select id="audioOutputDevices" class="w-full max-w-xs"></select>
+        </div>
+
+        <h2 class="canvas-label text-center w-full">Recorded Audio Waveform</h2>
+        <canvas id="recordedWaveformCanvas" class="w-full"></canvas>
+
+        <div
+          class="control-group w-full flex flex-row flex-wrap items-center justify-center gap-4 mt-4"
+        >
+          <div class="slider-group w-60">
+            <label for="startTrimSlider" class="text-center w-full"
+              >Start Trim (<span id="startTrimValue">0.00</span>s)</label
+            >
+            <input
+              type="range"
+              id="startTrimSlider"
+              min="0"
+              max="1000"
+              value="0"
+              disabled
+            />
+          </div>
+          <div class="slider-group w-60">
+            <label for="endTrimSlider" class="text-center w-full"
+              >End Trim (<span id="endTrimValue">0.00</span>s)</label
+            >
+            <input
+              type="range"
+              id="endTrimSlider"
+              min="0"
+              max="1000"
+              value="1000"
+              disabled
+            />
+          </div>
+        </div>
+        <div
+          class="flex flex-row items-center justify-center gap-4 w-full mt-2"
+        >
+          <button id="playButton" class="rack-button" disabled>Play</button>
+          <button id="trimButton" class="rack-button" disabled>
+            Trim / Cut
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div id="messageBox" class="message-box"></div>
+
+    <div id="spinner" class="spinner-overlay hidden">
+      <div class="spinner"></div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.min.js"></script>
+    <script type="module">
+      import {
+        saveSelectedDevices,
+        loadSelectedDevices,
+        clearSelectedDevices,
+      } from "./services/localstorageService.js";
+      import { showSpinner, hideSpinner } from "./services/spinnerService.js";
+
+      // Ensure Tone.js is initialized before anything else
+      // Modern browsers require user interaction to start the AudioContext
+      // This attempts to start it on the first mouse click or touch.
+      if (Tone.context.state !== "running") {
+        const startToneContext = () => {
+          if (Tone.context.state !== "running") {
+            Tone.start()
+              .then(() => {
+                console.log("Tone.js AudioContext started successfully!");
+                showMessage("Audio context ready!", 2000);
+              })
+              .catch((e) => {
+                console.error("Error starting Tone.js AudioContext:", e);
+                showMessage(
+                  "Error starting audio. Please ensure browser tabs are not muted or that you've allowed audio autoplay.",
+                  4000
+                );
+              });
+          }
+          // Remove listeners once context is running
+          document.documentElement.removeEventListener(
+            "mousedown",
+            startToneContext
+          );
+          document.documentElement.removeEventListener(
+            "touchstart",
+            startToneContext
+          );
+        };
+        document.documentElement.addEventListener(
+          "mousedown",
+          startToneContext
+        );
+        document.documentElement.addEventListener(
+          "touchstart",
+          startToneContext
+        );
+      } else {
+        console.log("Tone.js AudioContext already running.");
+      }
+
+      // --- Tone.js Variables ---
+      let microphone = null;
+      let recorder = null;
+      let recordedPlayer = null;
+      let recordedBuffer = null; // Stores the original or last trimmed AudioBuffer
+      let liveAnalyser = null;
+      let recordedAnalyser = null;
+      let currentDest = null;
+
+      // --- UI Elements ---
+      const recordButton = document.getElementById("recordButton");
+      const playButton = document.getElementById("playButton");
+      const trimButton = document.getElementById("trimButton");
+      const uploadAudioInput = document.getElementById("uploadAudio");
+      const resetButton = document.getElementById("resetButton"); // New Reset Button
+      const liveWaveformCanvas = document.getElementById("liveWaveformCanvas");
+      const recordedWaveformCanvas = document.getElementById(
+        "recordedWaveformCanvas"
+      );
+      const startTrimSlider = document.getElementById("startTrimSlider");
+      const endTrimSlider = document.getElementById("endTrimSlider");
+      const startTrimValueSpan = document.getElementById("startTrimValue");
+      const endTrimValueSpan = document.getElementById("endTrimValue");
+      const messageBox = document.getElementById("messageBox");
+      const audioInputDevicesSelect =
+        document.getElementById("audioInputDevices");
+      const audioOutputDevicesSelect =
+        document.getElementById("audioOutputDevices");
+      const spinner = document.getElementById("spinner");
+      const headerMenuButton = document.getElementById("headerMenuButton");
+      const headerMenuDropdown = document.getElementById("headerMenuDropdown");
+
+      // --- State Variables ---
+      let isRecording = false;
+      let isPlaying = false;
+      let currentTrimStart = 0; // In seconds
+      let currentTrimEnd = 0; // In seconds
+      let originalBufferDuration = 0; // Duration of the full recorded/uploaded buffer
+      let selectedMicrophoneDeviceId = "default"; // Stores the ID of the selected microphone
+
+      // --- Canvas Contexts ---
+      const liveCtx = liveWaveformCanvas.getContext("2d");
+      const recordedCtx = recordedWaveformCanvas.getContext("2d");
+
+      /**
+       * Displays a temporary message to the user.
+       * @param {string} message The message to display.
+       * @param {number} duration The duration in milliseconds to show the message.
+       */
+      function showMessage(message, duration = 3000) {
+        messageBox.textContent = message;
+        messageBox.classList.add("show");
+        setTimeout(() => {
+          messageBox.classList.remove("show");
+        }, duration);
+      }
+
+      /**
+       * Populates the audio input device dropdown with available microphones.
+       */
+      async function populateAudioDevices() {
+        try {
+          showSpinner(spinner);
+          // Await code here for 2 sec
+
+          // Remove
+          //await new Promise((resolve) => setTimeout(resolve, 1000));
+
+          // Ask for mic access to unlock full device list
+          await navigator.mediaDevices.getUserMedia({
+            audio: true,
+            video: false,
+          });
+
+          // 2️⃣ List input/output devices
+          const allDevices = await navigator.mediaDevices.enumerateDevices();
+          const audioInputs = allDevices.filter((d) => d.kind === "audioinput");
+          const audioOutputs = allDevices.filter(
+            (d) => d.kind === "audiooutput"
+          );
+
+          const { microphone, speaker } = loadSelectedDevices();
+
+          setupDeviceSelect(
+            audioInputDevicesSelect,
+            audioInputs,
+            "Microphone",
+            microphone
+          );
+          setupDeviceSelect(
+            audioOutputDevicesSelect,
+            audioOutputs,
+            "Speaker",
+            speaker
+          );
+
+          // 3️⃣ Attach listeners to apply selections
+          audioInputDevicesSelect.onchange = () => {
+            selectedMicrophoneDeviceId = audioInputDevicesSelect.value;
+            saveSelectedDevices(
+              selectedMicrophoneDeviceId,
+              audioOutputDevicesSelect.value
+            );
+            console.log("Input routed to: ", selectedMicrophoneDeviceId);
+            initializeMicrophone();
+          };
+
+          audioOutputDevicesSelect.onchange = async () => {
+            const outId = audioOutputDevicesSelect.value;
+            saveSelectedDevices(audioInputDevicesSelect.value, outId);
+            if (!supportSink()) return;
+
+            if (Tone.context.setSinkId) {
+              await Tone.context.setSinkId(outId);
+              console.log("AudioContext routed to:", outId);
+              return;
+            }
+
+            Tone.Destination.disconnect();
+            currentDest = Tone.context.createMediaStreamDestination();
+            Tone.Destination.connect(currentDest);
+
+            let audioEl =
+              document.getElementById("output-audio") || createOutputAudio();
+            audioEl.srcObject = currentDest.stream;
+
+            try {
+              await audioEl.setSinkId(outId);
+              console.log("Output routed to: ", audioEl.sinkId);
+            } catch (err) {
+              console.warn("Could not set output device:", err);
+            }
+          };
+
+          audioInputDevicesSelect.disabled = false;
+          audioOutputDevicesSelect.disabled = !supportSink();
+
+          selectedMicrophoneDeviceId = audioInputDevicesSelect.value;
+          await initializeMicrophone();
+        } catch (err) {
+          console.error("Error initializing audio devices:", err);
+          showMessage(
+            "Unable to list audio devices. Check mic permission.",
+            5000
+          );
+          audioInputDevicesSelect.disabled = true;
+          audioOutputDevicesSelect.disabled = true;
+        } finally {
+          hideSpinner(spinner);
+        }
+      }
+
+      // 🛠 Utility: fill a <select> with audio devices + default option
+      function setupDeviceSelect(
+        selectEl,
+        devices,
+        labelBase,
+        preferredDeviceId = null
+      ) {
+        selectEl.innerHTML = "";
+
+        if (devices.length === 0) {
+          const opt = document.createElement("option");
+          opt.value = "";
+          opt.textContent = `No ${labelBase.toLowerCase()}s found`;
+          selectEl.appendChild(opt);
+          return;
+        }
+
+        devices.forEach((d, i) => {
+          const opt = document.createElement("option");
+          opt.value = d.deviceId;
+          opt.textContent = d.label || `${labelBase} ${i + 1}`;
+          selectEl.appendChild(opt);
+        });
+
+        // Use preferred device if available, otherwise fallback
+        selectEl.value =
+          preferredDeviceId &&
+          devices.some((d) => d.deviceId === preferredDeviceId)
+            ? preferredDeviceId
+            : devices[0].deviceId;
+      }
+
+      // 🆚 Create or reuse hidden audio element to route Tone.js output
+      function createOutputAudio() {
+        const audioEl = document.createElement("audio");
+        audioEl.id = "output-audio";
+        audioEl.autoplay = true;
+        document.body.appendChild(audioEl);
+
+        // Pipe Tone.js output through it using MediaStreamDestination
+        const dest = Tone.context.createMediaStreamDestination();
+        Tone.Destination.connect(dest);
+        audioEl.srcObject = dest.stream;
+        return audioEl;
+      }
+
+      // ✅ Feature detection
+      function supportSink() {
+        return (
+          "setSinkId" in HTMLAudioElement.prototype ||
+          "setSinkId" in AudioContext.prototype
+        );
+      }
+
+      /**
+       * Initializes or re-initializes the microphone input and recorder based on the selected device.
+       */
+      async function initializeMicrophone() {
+        // Check if AudioContext is running before attempting to open microphone
+        if (Tone.context.state !== "running") {
+          showMessage(
+            "Audio is suspended. Click anywhere on the page to start audio playback first.",
+            5000
+          );
+          console.warn(
+            "Attempted to initialize microphone while AudioContext is suspended."
+          );
+          return false; // Indicate failure to initialize mic
+        }
+
+        try {
+          // If microphone already exists and is the same device, just ensure it's open
+          if (
+            microphone &&
+            microphone.deviceId === selectedMicrophoneDeviceId
+          ) {
+            await microphone.open();
+          } else {
+            // Dispose of old microphone instance if it exists
+            if (microphone) {
+              microphone.close(); // Close previous mic
+              microphone.dispose();
+            }
+            microphone = new Tone.UserMedia({
+              deviceId: selectedMicrophoneDeviceId,
+            });
+            await microphone.open(); // Request microphone access with the selected device
+          }
+
+          // Dispose of old recorder if it exists and create a new one
+          if (recorder) recorder.dispose();
+          recorder = new Tone.Recorder();
+
+          // Dispose of old live analyser if it exists and create a new one
+          if (liveAnalyser) liveAnalyser.dispose();
+          liveAnalyser = new Tone.Waveform();
+
+          // Connect microphone to recorder and live analyser
+          microphone.connect(recorder);
+          microphone.connect(liveAnalyser);
+
+          drawLiveWaveform(); // Start drawing live waveform
+          showMessage("Microphone access granted. Ready to record!", 2000);
+          return true; // Indicate success
+        } catch (error) {
+          console.error("Error accessing microphone:", error);
+          if (error.name === "NotAllowedError") {
+            showMessage(
+              "Microphone access denied. Please allow microphone access in your browser settings.",
+              5000
+            );
+          } else if (
+            error.name === "NotFoundError" ||
+            error.name === "DevicesNotFoundError"
+          ) {
+            showMessage(
+              "No microphone found. Please connect a microphone.",
+              5000
+            );
+          } else if (error.name === "NotReadableError") {
+            showMessage(
+              "Microphone is in use by another application. Please close other apps and try again.",
+              5000
+            );
+          } else {
+            showMessage(
+              `Error initializing microphone: ${error.message}.`,
+              5000
+            );
+          }
+          recordButton.disabled = true; // Disable recording if no mic access
+          return false; // Indicate failure
+        }
+      }
+
+      /**
+       * Draws the live audio waveform on the canvas.
+       */
+      function drawLiveWaveform() {
+        if (!liveAnalyser || !liveWaveformCanvas) return;
+
+        // Use requestAnimationFrame for continuous drawing
+        requestAnimationFrame(drawLiveWaveform);
+
+        const buffer = liveAnalyser.getValue(); // Get the waveform data (Float32Array of samples)
+        const width = liveWaveformCanvas.width / window.devicePixelRatio; // Use display width
+        const height = liveWaveformCanvas.height / window.devicePixelRatio; // Use display height
+
+        liveCtx.clearRect(0, 0, width, height); // Clear the canvas for fresh drawing
+        liveCtx.beginPath(); // Start a new path
+        liveCtx.strokeStyle = "#4A4A4A"; // Dark gray for waveform
+        liveCtx.lineWidth = 2; // Line thickness
+
+        // Draw a single line representing the waveform
+        // Iterate through the buffer and draw points
+        for (let i = 0; i < buffer.length; i++) {
+          // Calculate x position, spreading points across the canvas width
+          const x = (i / buffer.length) * width;
+          // Calculate y position, normalizing amplitude to canvas height
+          // buffer[i] ranges from -1 to 1. (0.5 + buffer[i] * 0.5) scales it to 0 to 1.
+          const y = (0.5 + buffer[i] * 0.5) * height;
+
+          if (i === 0) {
+            liveCtx.moveTo(x, y); // Move to the first point
+          } else {
+            liveCtx.lineTo(x, y); // Draw a line to subsequent points
+          }
+        }
+        liveCtx.stroke(); // Render the path
+      }
+
+      /**
+       * Draws the recorded audio waveform on the canvas, highlighting the trimmed section.
+       */
+      function drawRecordedWaveform() {
+        if (!recordedBuffer || !recordedWaveformCanvas) {
+          // If no buffer, clear the canvas
+          recordedCtx.clearRect(
+            0,
+            0,
+            recordedWaveformCanvas.width,
+            recordedWaveformCanvas.height
+          );
+          return;
+        }
+
+        requestAnimationFrame(drawRecordedWaveform); // Keep drawing
+
+        const width = recordedWaveformCanvas.width / window.devicePixelRatio;
+        const height = recordedWaveformCanvas.height / window.devicePixelRatio;
+        recordedCtx.clearRect(0, 0, width, height);
+
+        // Access the first channel for drawing the waveform representation
+        const bufferData = recordedBuffer.getChannelData(0);
+
+        // --- Draw the full waveform first (background) ---
+        recordedCtx.beginPath();
+        recordedCtx.strokeStyle = "#6A6A6A"; // Slightly lighter gray for full waveform
+        recordedCtx.lineWidth = 1.5;
+
+        // Calculate step to fit waveform to canvas width, ensuring sufficient detail
+        const step = Math.max(1, Math.ceil(bufferData.length / width));
+        const amp = height / 2; // Amplitude for waveform drawing (center of canvas)
+
+        for (let i = 0; i < width; i++) {
+          let min = 1.0;
+          let max = -1.0;
+          // Aggregate min/max values for a small segment to create a "filled" look
+          for (let j = 0; j < step; j++) {
+            const datum =
+              bufferData[Math.min(bufferData.length - 1, i * step + j)];
+            if (datum < min) min = datum;
+            if (datum > max) max = datum;
+          }
+          recordedCtx.lineTo(i, (1 - min) * amp); // Top of the waveform segment
+          recordedCtx.lineTo(i, (1 - max) * amp); // Bottom of the waveform segment
+        }
+        recordedCtx.stroke();
+
+        // --- Draw the trimmed section with a different color (foreground) ---
+        // Calculate pixel positions for start and end trim points
+        const startX = (currentTrimStart / originalBufferDuration) * width;
+        const endX = (currentTrimEnd / originalBufferDuration) * width;
+
+        recordedCtx.beginPath();
+        recordedCtx.strokeStyle = "#FFB6C1"; // Light Pink for trimmed section
+        recordedCtx.lineWidth = 2;
+
+        for (let i = 0; i < width; i++) {
+          if (i >= startX && i <= endX) {
+            // Only draw if within the trimmed range
+            let min = 1.0;
+            let max = -1.0;
+            for (let j = 0; j < step; j++) {
+              const datum =
+                bufferData[Math.min(bufferData.length - 1, i * step + j)];
+              if (datum < min) min = datum;
+              if (datum > max) max = datum;
+            }
+            recordedCtx.lineTo(i, (1 - min) * amp);
+            recordedCtx.lineTo(i, (1 - max) * amp);
+          }
+        }
+        recordedCtx.stroke();
+
+        // --- Draw translucent overlays for untrimmed parts ---
+        recordedCtx.fillStyle = "rgba(0, 0, 0, 0.2)"; // Semi-transparent black
+        recordedCtx.fillRect(0, 0, startX, height); // Left untrimmed part
+        recordedCtx.fillRect(endX, 0, width - endX, height); // Right untrimmed part
+      }
+
+      /**
+       * Sets up the sliders based on the current audio buffer duration.
+       * This function should be called whenever recordedBuffer changes.
+       */
+      function setupTrimSliders() {
+        if (recordedBuffer) {
+          originalBufferDuration = recordedBuffer.duration;
+          // Sliders operate in milliseconds for finer control
+          startTrimSlider.max = originalBufferDuration * 1000;
+          endTrimSlider.max = originalBufferDuration * 1000;
+
+          // Set initial trim points to cover the full length of the new buffer
+          currentTrimStart = 0;
+          currentTrimEnd = originalBufferDuration;
+
+          startTrimSlider.value = currentTrimStart * 1000;
+          endTrimSlider.value = currentTrimEnd * 1000;
+
+          updateTrimValuesDisplay(); // Update the displayed time values
+
+          // Enable relevant UI elements
+          startTrimSlider.disabled = false;
+          endTrimSlider.disabled = false;
+          playButton.disabled = false;
+          trimButton.disabled = false;
+        } else {
+          // If no audio buffer, disable all related controls
+          startTrimSlider.disabled = true;
+          endTrimSlider.disabled = true;
+          playButton.disabled = true;
+          trimButton.disabled = true;
+          // Reset display values
+          currentTrimStart = 0;
+          currentTrimEnd = 0;
+          originalBufferDuration = 0;
+          updateTrimValuesDisplay();
+        }
+        drawRecordedWaveform(); // Redraw waveform to reflect initial or updated trim values
+      }
+
+      /**
+       * Updates the displayed trim values (seconds).
+       */
+      function updateTrimValuesDisplay() {
+        startTrimValueSpan.textContent = currentTrimStart.toFixed(2);
+        endTrimValueSpan.textContent = currentTrimEnd.toFixed(2);
+      }
+
+      /**
+       * Resets the application to its initial state.
+       */
+      function resetApplication() {
+        // Stop any ongoing recording or playback
+        if (isRecording) {
+          recordButton.click(); // Simulate click to stop recording
+        }
+        if (isPlaying) {
+          playButton.click(); // Simulate click to stop playback
+        }
+
+        // Dispose of Tone.js instances
+        if (recordedPlayer) {
+          recordedPlayer.dispose();
+          recordedPlayer = null;
+        }
+        if (recorder) {
+          recorder.dispose();
+          recorder = null;
+        }
+        if (microphone) {
+          microphone.close(); // Close microphone stream
+          microphone.dispose();
+          microphone = null;
+        }
+        if (liveAnalyser) {
+          liveAnalyser.dispose();
+          liveAnalyser = null;
+        }
+        if (recordedAnalyser) {
+          recordedAnalyser.dispose();
+          recordedAnalyser = null;
+        }
+
+        // Reset state variables
+        recordedBuffer = null;
+        isRecording = false;
+        isPlaying = false;
+        currentTrimStart = 0;
+        currentTrimEnd = 0;
+        originalBufferDuration = 0;
+        //selectedMicrophoneDeviceId = "default";
+
+        // Reset UI elements
+        recordButton.textContent = "Record";
+        playButton.textContent = "Play";
+        recordButton.classList.remove("recording-active");
+        audioInputDevicesSelect.disabled = false; // Re-enable device selection
+        audioOutputDevicesSelect.disabled = false; // Re-enable device selection
+
+        if (currentDest) {
+          Tone.Destination.disconnect(currentDest); // break the extra path
+          currentDest.stream.getTracks().forEach((t) => t.stop()); // GC the stream
+          currentDest = null;
+        }
+        const oldAudioEl = document.getElementById("output-audio");
+        if (oldAudioEl) oldAudioEl.remove();
+
+        setupTrimSliders(); // This will disable play/trim buttons and reset sliders
+        recordedCtx.clearRect(
+          0,
+          0,
+          recordedWaveformCanvas.width,
+          recordedWaveformCanvas.height
+        ); // Clear recorded canvas
+        liveCtx.clearRect(
+          0,
+          0,
+          liveWaveformCanvas.width,
+          liveWaveformCanvas.height
+        ); // Clear live canvas
+
+        // Reset dropdown to default and repopulate
+        populateAudioDevices();
+        audioInputDevicesSelect.value = "default";
+
+        showMessage("Application reset.", 2000);
+      }
+
+      // --- Event Listeners ---
+      recordButton.addEventListener("click", async () => {
+        if (!isRecording) {
+          // Start Recording
+          audioInputDevicesSelect.disabled = true; // Disable device selection during recording
+          // Attempt to initialize microphone. If it fails, stop execution.
+          const micReady = await initializeMicrophone();
+          if (!micReady) {
+            return; // Stop here if microphone setup failed
+          }
+
+          // Disconnect player if playing to avoid feedback during recording
+          if (recordedPlayer && recordedPlayer.state === "started") {
+            recordedPlayer.stop();
+            isPlaying = false;
+            playButton.textContent = "Play";
+          }
+
+          recorder.start(); // Start Tone.js recorder
+          isRecording = true;
+          recordButton.textContent = "Stop Recording";
+          recordButton.classList.add("recording-active"); // Add a class for styling (optional)
+          showMessage("Recording started...", 2000);
+        } else {
+          // Stop Recording
+          isRecording = false;
+          recordButton.textContent = "Record";
+          recordButton.classList.remove("recording-active");
+
+          // Stop the recorder and get the recorded audio as a Blob
+          const recording = await recorder.stop();
+          showMessage("Recording stopped. Processing audio...", 2000);
+
+          // Convert Blob to ArrayBuffer, then decode into an AudioBuffer for Tone.Player
+          const arrayBuffer = await recording.arrayBuffer();
+          Tone.context
+            .decodeAudioData(arrayBuffer)
+            .then((audioBuffer) => {
+              recordedBuffer = audioBuffer; // Store the new audio buffer
+              if (recordedPlayer) {
+                recordedPlayer.dispose(); // Clean up previous player if it exists
+              }
+              recordedPlayer = new Tone.Player(recordedBuffer).toDestination(); // Create new player
+
+              // Set up recorded analyser for visualization of the new buffer
+              // Dispose of old recorded analyser if it exists and create a new one
+              if (recordedAnalyser) recordedAnalyser.dispose();
+              recordedAnalyser = new Tone.Waveform();
+              recordedPlayer.connect(recordedAnalyser);
+
+              setupTrimSliders(); // Re-setup sliders for the new audio
+              showMessage("Audio recorded and loaded!", 2000);
+            })
+            .catch((e) => {
+              console.error("Error decoding recorded audio data:", e);
+              showMessage("Error processing recorded audio.", 3000);
+            });
+        }
+      });
+
+      playButton.addEventListener("click", () => {
+        if (!recordedPlayer || !recordedBuffer) {
+          showMessage("No audio recorded or uploaded yet to play.", 2000);
+          return;
+        }
+
+        if (!isPlaying) {
+          audioOutputDevicesSelect.disabled = true; // Disable device selection during playback
+          // Start Playback (trimmed version)
+          const startOffset = currentTrimStart;
+          const duration = currentTrimEnd - currentTrimStart;
+
+          if (
+            duration <= 0 ||
+            startOffset < 0 ||
+            currentTrimEnd > originalBufferDuration
+          ) {
+            showMessage("Invalid trim points. Please adjust sliders.", 3000);
+            console.warn("Attempted to play with invalid trim points:", {
+              startOffset,
+              duration,
+              currentTrimEnd,
+              originalBufferDuration,
+            });
+            return;
+          }
+
+          // Start playback from the calculated offset for the calculated duration
+          recordedPlayer.start(0, startOffset, duration);
+          isPlaying = true;
+          playButton.textContent = "Stop Play";
+          showMessage(
+            `Playing audio from ${startOffset.toFixed(
+              2
+            )}s to ${currentTrimEnd.toFixed(2)}s...`,
+            2000
+          );
+
+          // Event listener for when the player stops (either naturally or manually)
+          recordedPlayer.onstop = () => {
+            if (isPlaying) {
+              // Check if it was intentionally stopped by the user or ended naturally
+              isPlaying = false;
+              playButton.textContent = "Play";
+              showMessage("Playback ended.", 1500);
+            }
+          };
+        } else {
+          // Stop Playback
+          recordedPlayer.stop();
+          isPlaying = false;
+          playButton.textContent = "Play";
+          showMessage("Playback stopped.", 1500);
+        }
+      });
+
+      trimButton.addEventListener("click", async () => {
+        if (!recordedBuffer || !recordedPlayer) {
+          showMessage("No audio to trim.", 2000);
+          return;
+        }
+
+        if (currentTrimStart >= currentTrimEnd) {
+          showMessage(
+            "Trim start must be before trim end. Please adjust sliders.",
+            3000
+          );
+          return;
+        }
+
+        showMessage("Trimming audio...", 1500);
+
+        const sampleRate = recordedBuffer.sampleRate;
+        const numberOfChannels = recordedBuffer.numberOfChannels;
+
+        // Calculate start and end sample indices from trim times
+        const startSample = Math.floor(currentTrimStart * sampleRate);
+        const endSample = Math.floor(currentTrimEnd * sampleRate);
+        const trimmedLength = endSample - startSample;
+
+        if (trimmedLength <= 0) {
+          showMessage(
+            "Trimmed section is too short or invalid. Adjust sliders to select a valid segment.",
+            3000
+          );
+          return;
+        }
+
+        // Create a new AudioBuffer for the trimmed part, preserving all channels
+        const newAudioBuffer = Tone.context.createBuffer(
+          numberOfChannels, // Use original number of channels
+          trimmedLength, // New length in samples
+          sampleRate // Keep original sample rate
+        );
+
+        // Copy data for each channel
+        for (let channel = 0; channel < numberOfChannels; channel++) {
+          const originalData = recordedBuffer.getChannelData(channel);
+          const newChannelData = newAudioBuffer.getChannelData(channel);
+
+          for (let i = 0; i < trimmedLength; i++) {
+            newChannelData[i] = originalData[startSample + i];
+          }
+        }
+
+        // Update the global recordedBuffer with the new trimmed buffer
+        recordedBuffer = newAudioBuffer;
+        // Dispose of the old player and create a new one with the trimmed buffer
+        recordedPlayer.dispose();
+        recordedPlayer = new Tone.Player(recordedBuffer).toDestination();
+        // Dispose of old recorded analyser if it exists and create a new one
+        if (recordedAnalyser) recordedAnalyser.dispose();
+        recordedAnalyser = new Tone.Waveform();
+        recordedPlayer.connect(recordedAnalyser); // Reconnect analyser to the new player
+
+        // Reset trim sliders to the new full length of the trimmed audio
+        setupTrimSliders();
+        showMessage("Audio trimmed successfully!", 2000);
+      });
+
+      uploadAudioInput.addEventListener("change", async (event) => {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        showMessage("Uploading and processing audio file...", 2000);
+
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+          const arrayBuffer = e.target.result;
+          try {
+            // Decode the uploaded audio file into an AudioBuffer
+            const audioBuffer = await Tone.context.decodeAudioData(arrayBuffer);
+            recordedBuffer = audioBuffer; // Store the new audio buffer
+            if (recordedPlayer) {
+              recordedPlayer.dispose();
+            }
+            recordedPlayer = new Tone.Player(recordedBuffer).toDestination();
+            // Dispose of old recorded analyser if it exists and create a new one
+            if (recordedAnalyser) recordedAnalyser.dispose();
+            recordedAnalyser = new Tone.Waveform();
+            recordedPlayer.connect(recordedAnalyser);
+
+            setupTrimSliders(); // Setup sliders for the new audio
+            showMessage("Audio file loaded!", 2000);
+          } catch (error) {
+            console.error("Error decoding uploaded audio:", error);
+            showMessage(
+              "Error loading audio file. Please ensure it's a valid audio format (e.g., WAV, MP3).",
+              5000
+            );
+          }
+        };
+        reader.readAsArrayBuffer(file); // Read the file as an ArrayBuffer
+      });
+
+      audioInputDevicesSelect.addEventListener("change", (event) => {
+        selectedMicrophoneDeviceId = event.target.value;
+        showMessage(
+          `Microphone set to: ${
+            audioInputDevicesSelect.options[
+              audioInputDevicesSelect.selectedIndex
+            ].text
+          }`,
+          2000
+        );
+        // Re-initialize microphone on next record button click to use new device
+        if (microphone) {
+          microphone.close(); // Close the current microphone
+          microphone.dispose();
+          microphone = null; // Set to null so initializeMicrophone creates a new one
+        }
+      });
+
+      startTrimSlider.addEventListener("input", (event) => {
+        let value = parseFloat(event.target.value) / 1000; // Convert slider value (ms) to seconds
+        // Ensure start trim point does not exceed end trim point
+        if (value >= currentTrimEnd) {
+          value = currentTrimEnd - 0.01; // Set it just before the end
+          if (value < 0) value = 0; // Prevent going below zero
+          startTrimSlider.value = value * 1000; // Update slider position
+        }
+        currentTrimStart = value; // Update state variable
+        updateTrimValuesDisplay(); // Update displayed time
+        drawRecordedWaveform(); // Redraw waveform to show new trim
+      });
+
+      endTrimSlider.addEventListener("input", (event) => {
+        let value = parseFloat(event.target.value) / 1000; // Convert slider value (ms) to seconds
+        // Ensure end trim point does not go below start trim point
+        if (value <= currentTrimStart) {
+          value = currentTrimStart + 0.01; // Set it just after the start
+          if (value > originalBufferDuration) value = originalBufferDuration; // Prevent exceeding max duration
+          endTrimSlider.value = value * 1000; // Update slider position
+        }
+        currentTrimEnd = value; // Update state variable
+        updateTrimValuesDisplay(); // Update displayed time
+        drawRecordedWaveform(); // Redraw waveform to show new trim
+      });
+
+      resetButton.addEventListener("click", resetApplication); // New Reset Button Listener
+
+      function closeHeaderMenu() {
+        headerMenuDropdown.classList.add("hidden");
+        headerMenuButton.setAttribute("aria-expanded", "false");
+      }
+
+      function openHeaderMenu() {
+        headerMenuDropdown.classList.remove("hidden");
+        headerMenuButton.setAttribute("aria-expanded", "true");
+      }
+
+      headerMenuButton.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const isOpen = !headerMenuDropdown.classList.contains("hidden");
+        if (isOpen) {
+          closeHeaderMenu();
+        } else {
+          openHeaderMenu();
+        }
+      });
+
+      // Close menu when clicking outside
+      document.addEventListener("click", (e) => {
+        if (!headerMenuDropdown.classList.contains("hidden")) {
+          if (
+            !headerMenuDropdown.contains(e.target) &&
+            e.target !== headerMenuButton
+          ) {
+            closeHeaderMenu();
+          }
+        }
+      });
+
+      // Close menu on Escape key
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape") {
+          closeHeaderMenu();
+        }
+      });
+
+      // Dropdown menu button close logic
+      const headerMenuItems =
+        headerMenuDropdown.querySelectorAll(".header-menu-item");
+      headerMenuItems.forEach((btn) => {
+        btn.addEventListener("click", () => {
+          closeHeaderMenu();
+        });
+      });
+
+      // Initialize on window load
+      window.onload = async () => {
+        // Function to set canvas dimensions correctly for high-DPI screens
+        const setCanvasResolution = (canvas) => {
+          const rect = canvas.getBoundingClientRect();
+          canvas.width = rect.width * window.devicePixelRatio;
+          canvas.height = rect.height * window.devicePixelRatio;
+          const ctx = canvas.getContext("2d");
+          ctx.scale(window.devicePixelRatio, window.devicePixelRatio); // Scale context for drawing
+        };
+
+        // Set resolutions for both canvases
+        setCanvasResolution(liveWaveformCanvas);
+        setCanvasResolution(recordedWaveformCanvas);
+
+        // Add event listener to redraw canvases on window resize for responsiveness
+        window.addEventListener("resize", () => {
+          setCanvasResolution(liveWaveformCanvas);
+          setCanvasResolution(recordedWaveformCanvas);
+          // Redraw waveforms if they exist
+          drawLiveWaveform();
+          drawRecordedWaveform();
+        });
+
+        // Initial setup for sliders (they will be disabled if no audio is loaded yet)
+        setupTrimSliders();
+        // Populate devices dropdown on load
+        await populateAudioDevices();
+        showMessage(
+          "Click 'Record' to start, or 'Upload Audio' to load a file. Click anywhere to enable sound.",
+          5000
+        );
+      };
+    </script>
+
+    <style>
+      .header-icon-btn {
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      }
+      .header-icon-btn:active {
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+      }
+      .header-menu-dropdown {
+        min-width: 11rem;
+        animation: fadeIn 0.18s;
+      }
+      .header-menu-item {
+        font-weight: 500;
+        font-size: 1rem;
+        color: #333;
+        background: none;
+        border: none;
+        outline: none;
+        cursor: pointer;
+        transition: background 0.15s;
+        text-align: left;
+      }
+      .header-menu-item svg {
+        flex-shrink: 0;
+      }
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(-8px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+    </style>
+  </body>
+</html>
