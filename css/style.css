@@ -100,6 +100,7 @@ body {
 
 input[type="range"] {
   -webkit-appearance: none;
+  appearance: none;
   width: 100%;
   height: 10px;
   background: #90ee90;
@@ -136,10 +137,12 @@ canvas {
   background-color: #f0e68c;
   border: 2px solid #d3c14f;
   border-radius: 8px;
-  width: 100%;
-  height: 150px;
+  width: 100% !important;
+  max-width: 100%;
+  height: 150px !important;
   box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.1);
   margin-top: 10px;
+  box-sizing: border-box;
 }
 
 .canvas-label {
