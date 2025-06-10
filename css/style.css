@@ -8,9 +8,24 @@ body {
   align-items: center;
   min-height: 100vh;
   margin: 0;
-  padding: 20px;
+  padding: 75px 20px 20px 20px; /* Added top padding for header */
   box-sizing: border-box;
   overflow-x: hidden;
+}
+
+.sticky-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  background-color: #808080;
+  color: #ffb6c1;
+  text-align: center;
+  padding: 15px;
+  font-size: 24px;
+  font-weight: 700;
+  z-index: 1000;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
 }
 
 .rack-container {
