@@ -263,19 +263,18 @@
             saveSelectedDevices(audioInputDevicesSelect.value, outId);
             if (!supportSink()) return;
 
-            let audioEl = document.getElementById("output-audio");
-            if (!audioEl) {
-              audioEl = createOutputAudio();
+            if (Tone.context.setSinkId) {
+              await Tone.context.setSinkId(outId);
+              console.log("AudioContext routed to:", outId);
+              return;
             }
 
-            // Clean up existing routing
-            if (currentDest) {
-              Tone.Destination.disconnect(currentDest);
-            }
-
-            // Create new routing
+            Tone.Destination.disconnect();
             currentDest = Tone.context.createMediaStreamDestination();
             Tone.Destination.connect(currentDest);
+
+            let audioEl =
+              document.getElementById("output-audio") || createOutputAudio();
             audioEl.srcObject = currentDest.stream;
 
             try {
@@ -653,6 +652,14 @@
         recordButton.classList.remove("recording-active");
         audioInputDevicesSelect.disabled = false; // Re-enable device selection
         audioOutputDevicesSelect.disabled = false; // Re-enable device selection
+
+        if (currentDest) {
+          Tone.Destination.disconnect(currentDest); // break the extra path
+          currentDest.stream.getTracks().forEach((t) => t.stop()); // GC the stream
+          currentDest = null;
+        }
+        const oldAudioEl = document.getElementById("output-audio");
+        if (oldAudioEl) oldAudioEl.remove();
 
         setupTrimSliders(); // This will disable play/trim buttons and reset sliders
         recordedCtx.clearRect(
