@@ -59,12 +59,21 @@
     </style>
   </head>
   <body
-    class="bg-gradient-to-br from-pink-200 via-blue-200 to-green-200 min-h-screen p-4 flex flex-col items-center"
+    class="bg-gradient-to-br from-pink-200 via-blue-200 to-green-200 min-h-screen flex flex-col items-center"
   >
+    <!-- Sticky Header -->
+    <header
+      class="w-full sticky top-0 z-50 bg-white/80 backdrop-blur shadow-md flex items-center px-8 py-3 mb-6"
+    >
+      <span class="text-2xl font-extrabold text-indigo-700 tracking-tight"
+        >Beat Tailor</span
+      >
+    </header>
+
     <!-- Main Application Container -->
     <div
       id="app"
-      class="bg-white p-6 rounded-3xl shadow-2xl w-full max-w-7xl flex flex-col lg:flex-row gap-6"
+      class="bg-white p-6 rounded-3xl shadow-2xl w-full max-w-7xl flex flex-col lg:flex-row gap-6 mb-6"
     >
       <!-- Left Column: Global Controls & Pads -->
       <div class="flex flex-col gap-6 lg:w-1/3">
