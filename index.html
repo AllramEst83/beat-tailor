@@ -1989,6 +1989,7 @@
             await Tone.start();
             Tone.Transport.start();
             playBtn.textContent = "Playing...";
+            clearTimelineBtn.disabled = true;
 
             let maxTimeSeconds = 0;
             timelineEventsData.forEach((event) => {
@@ -1998,7 +1999,8 @@
 
             const padding = 1;
             Tone.Transport.scheduleOnce(() => {
-              handleTransportStop(); // ✅ Reuse stop logic
+              handleTransportStop();
+              clearTimelineBtn.disabled = false;
             }, maxTimeSeconds + padding);
           } else {
             showToast("No events to play. Please add events to the timeline.");
@@ -2058,6 +2060,7 @@
         downloadRecordingLink.classList.add("hidden");
         stopRecordBtn.style.display = "inline-block";
         recordBtn.disabled = true;
+        clearTimelineBtn.disabled = true;
 
         try {
           await masterRecorder.start(); // Start master recorder
@@ -2081,6 +2084,7 @@
             const padding = 1;
             Tone.Transport.scheduleOnce(() => {
               handleTransportStop();
+              clearTimelineBtn.disabled = false;
             }, maxTimeSeconds + padding);
           }
         } catch (error) {
