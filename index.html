@@ -2048,6 +2048,11 @@
       }
 
       recordBtn.addEventListener("click", async () => {
+        if (timelineEventsData.length === 0) {
+          showToast("No events to record. Please add events to the timeline.");
+          return;
+        }
+
         recordBtn.textContent = "Recording...";
         recordBtn.classList.add("bg-red-500", "animate-pulse");
         downloadRecordingLink.classList.add("hidden");
